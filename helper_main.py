@@ -244,7 +244,7 @@ class Helper:
             # записываем в self.last_used_path последний использовавшийся каталог
             self.last_used_path = os.path.dirname(self.filename)
         else:
-            # TODO нафиг этот случай?
+            # TODO заменить это на очищение поля (если выбран другой спутник), но оставить last_used_path
             self.dlg.INPUT.setText(self.filename)
 
     # TODO сделать select_..._ функцией по типу populate_combo
