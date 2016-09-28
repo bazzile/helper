@@ -77,6 +77,7 @@ class Helper:
         self.toolbar.setObjectName(u'Helper')
 
         # мои переменные
+        self.filename = None
         self.last_used_path = None
 
     # noinspection PyMethodMayBeStatic
@@ -237,18 +238,14 @@ class Helper:
 
     def select_input_file(self):
         if self.last_used_path is None:
-            filename = QFileDialog.getOpenFileName(
+            self.filename = QFileDialog.getOpenFileName(
                 self.dlg, u"Укажите файл контура ", "", u'Полигоны (*.shp *.kml *tab *geojson)')
+            self.dlg.INPUT.setText(self.filename)
             # записываем в self.last_used_path последний использовавшийся каталог
-            self.last_used_path = os.path.dirname(filename)
+            self.last_used_path = os.path.dirname(self.filename)
         else:
-            filename = QFileDialog.getOpenFileName(
-                self.dlg, u"Укажите файл с квиклуками ", self.last_used_path, u'Полигоны (*.shp *.kml *tab *geojson)')
-        if filename:
-            self.dlg.INPUT.setText(filename)
-            # TODO лучше всего загружать слой в QGIS вместе с результатами
-        else:
-            pass
+            # TODO нафиг этот случай?
+            self.dlg.INPUT.setText(self.filename)
 
     # TODO сделать select_..._ функцией по типу populate_combo
     def select_output_dir(self):
@@ -256,3 +253,5 @@ class Helper:
             self.dlg, u"Укажите файл контура ", "", )
         # записываем в self.last_used_path последний использовавшийся каталог
         self.last_used_path = os.path.dirname(out_dir)
+
+    # TODO if имя_спутника = set sertain_file_type
