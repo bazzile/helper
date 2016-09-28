@@ -20,13 +20,21 @@
  *                                                                         *
  ***************************************************************************/
 """
-from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication
-from PyQt4.QtGui import QAction, QIcon
+from PyQt4.QtCore import *
+from PyQt4.QtGui import *
+from qgis.core import *
 # Initialize Qt resources from file resources.py
 import resources
 # Import the code for the dialog
 from helper_main_dialog import HelperDialog
 import os.path
+
+
+def set_sat_list():
+    """"Задаём список доступных спутников"""
+    sat_list = ["DEIMOS2", "BKA", "TRIPLESAT", "TH", "GF1", "ZY3", "GF2", "KAZEOSAT1", "KAZEOSAT2", "ALOS", "PRISM",
+                "DG/WV-QB-IK-GE", "SPOT5", "SPOT67", "KOMPSAT2", "KOMPSAT3", ]
+    return sat_list
 
 
 class Helper:
@@ -68,6 +76,9 @@ class Helper:
         self.toolbar = self.iface.addToolBar(u'Helper')
         self.toolbar.setObjectName(u'Helper')
 
+        # мои переменные
+        self.last_used_path = None
+
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
         """Get the translation for a string using Qt translation API.
@@ -83,18 +94,17 @@ class Helper:
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
         return QCoreApplication.translate('Helper', message)
 
-
     def add_action(
-        self,
-        icon_path,
-        text,
-        callback,
-        enabled_flag=True,
-        add_to_menu=True,
-        add_to_toolbar=True,
-        status_tip=None,
-        whats_this=None,
-        parent=None):
+            self,
+            icon_path,
+            text,
+            callback,
+            enabled_flag=True,
+            add_to_menu=True,
+            add_to_toolbar=True,
+            status_tip=None,
+            whats_this=None,
+            parent=None):
         """Add a toolbar icon to the toolbar.
 
         :param icon_path: Path to the icon for this action. Can be a resource
@@ -167,6 +177,15 @@ class Helper:
             callback=self.run,
             parent=self.iface.mainWindow())
 
+    def populateGui(self):
+        """Make the GUI live."""
+        self.populateComboBox(self.dlg.SENSOR, set_sat_list(), u'...', True)
+
+        # при выборе спутника переключаем текущую [currentIndex()] вкладку на следующую
+        self.dlg.SENSOR.activated.connect(
+            lambda: self.dlg.toolBox.setCurrentIndex(int(self.dlg.toolBox.currentIndex()) + 1))
+        self.dlg.INPUT.setText(u'Хуй')
+        self.dlg.INPUTbrowse.clicked.connect(self.select_input_file)
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
@@ -178,9 +197,9 @@ class Helper:
         # remove the toolbar
         del self.toolbar
 
-
     def run(self):
         """Run method that performs all the real work"""
+        self.populateGui()
         # show the dialog
         self.dlg.show()
         # Run the dialog event loop
@@ -190,3 +209,50 @@ class Helper:
             # Do something useful here - delete the line containing pass and
             # substitute with your code.
             pass
+
+    def populateComboBox(self, combo, list, predef, sort):
+        # procedure to fill specified combobox with provided list
+        combo.blockSignals(True)
+        combo.clear()
+        model = QStandardItemModel(combo)
+        predefInList = None
+        for elem in list:
+            try:
+                item = QStandardItem(unicode(elem))
+            except TypeError:
+                item = QStandardItem(str(elem))
+            model.appendRow(item)
+            if elem == predef:
+                predefInList = elem
+        if sort:
+            model.sort(0)
+        combo.setModel(model)
+        if predef != "":
+            if predefInList:
+                combo.setCurrentIndex(combo.findText(predefInList))
+            else:
+                combo.insertItem(0, predef)
+                combo.setCurrentIndex(0)
+        combo.blockSignals(False)
+
+    def select_input_file(self):
+        if self.last_used_path is None:
+            filename = QFileDialog.getOpenFileName(
+                self.dlg, u"Укажите файл контура ", "", u'Полигоны (*.shp *.kml *tab *geojson)')
+            # записываем в self.last_used_path последний использовавшийся каталог
+            self.last_used_path = os.path.dirname(filename)
+        else:
+            filename = QFileDialog.getOpenFileName(
+                self.dlg, u"Укажите файл с квиклуками ", self.last_used_path, u'Полигоны (*.shp *.kml *tab *geojson)')
+        if filename:
+            self.dlg.INPUT.setText(filename)
+            # TODO лучше всего загружать слой в QGIS вместе с результатами
+        else:
+            pass
+
+    # TODO сделать select_..._ функцией по типу populate_combo
+    def select_output_dir(self):
+        out_dir = QFileDialog.getExistingDirectory(
+            self.dlg, u"Укажите файл контура ", "", )
+        # записываем в self.last_used_path последний использовавшийся каталог
+        self.last_used_path = os.path.dirname(out_dir)
