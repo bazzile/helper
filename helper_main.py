@@ -30,6 +30,20 @@ from helper_main_dialog import HelperDialog
 import os.path
 
 
+# задание стандартной директории
+def lastUsedDir():
+    settings = QSettings("Innoter Helper", "helper")
+    # можно 'C:\\' вместо ''
+    return settings.value("lastUsedDir", str(""))
+
+
+# обновление стандартной директории на последнюю использовавшуюся
+def setLastUsedDir(lastDir):
+    path = QFileInfo(lastDir).absolutePath()
+    settings = QSettings("Innoter Helper", "helper")
+    settings.setValue("lastUsedDir", str(path))
+
+
 class Satellite:
     def __init__(self):
         self.satellite = None
@@ -255,19 +269,12 @@ class Helper:
             file_format = u' БКА (*.kml *.kmz *.KML *.KMZ)'
         else:
             file_format = u'??? (Сенсор не задан)'
-        if self.last_used_path is None:
-            self.curr_filepath = QFileDialog.getOpenFileName(
-                self.dlg, u"Укажите файл контура ", "c:\\", file_format)
-            # записываем в self.last_used_path последний использовавшийся каталог
+        self.curr_filepath = QFileDialog.getOpenFileName(
+                self.dlg, u"Укажите файл контура ", lastUsedDir(), file_format)
+        if self.curr_filepath != '':
             self.dlg.INPUT.setText(self.curr_filepath)
-        elif self.last_used_path is not None and self.curr_filepath is None:
-            self.last_used_path = "c:\\"
+            setLastUsedDir(os.path.dirname(self.curr_filepath))
         else:
-            self.curr_filepath = QFileDialog.getOpenFileName(
-                self.dlg, u"Укажите файл контура ", self.last_used_path, file_format)
-            self.last_used_path = os.path.dirname(self.curr_filepath)
-            self.dlg.INPUT.setText(self.curr_filepath)
-        if self.curr_filepath is None:
             self.dlg.INPUT.setText(u'Где взять исходные файлы?')
 
     # TODO сделать select_..._ функцией по типу populate_combo
