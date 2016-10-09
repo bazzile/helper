@@ -251,7 +251,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="pushButton">
+            <widget class="QPushButton" name="START">
              <property name="text">
               <string>Начать</string>
              </property>
@@ -272,17 +272,49 @@
            </item>
           </layout>
          </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout">
+           <item>
+            <spacer name="horizontalSpacer_10">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="browse_on_complete">
+             <property name="text">
+              <string>открыть папку с результатом по окончанию</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="horizontalSpacer_9">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </item>
         </layout>
        </item>
       </layout>
-      <zorder>horizontalSpacer_2</zorder>
-      <zorder>verticalLayoutWidget</zorder>
-      <zorder>line</zorder>
-      <zorder>line_2</zorder>
-      <zorder>line_3</zorder>
-      <zorder>verticalLayoutWidget_2</zorder>
-      <zorder>verticalLayoutWidget_3</zorder>
-      <zorder>verticalLayoutWidget_4</zorder>
      </widget>
      <widget class="QWidget" name="tab_2">
       <attribute name="title">

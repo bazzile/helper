@@ -8,7 +8,7 @@ from PIL import Image
 import zipfile
 
 
-def bka_ql_exporter(source_file, dst_dirpath):
+def bka_ql_exporter(source_file, dst_dirpath, open_on_finish=True):
     src_file = source_file
     # TODO название директории dst_dir_name/path должно выбираться из Helper
     dst_dir_name = 'QuickLooks'
@@ -70,3 +70,8 @@ def bka_ql_exporter(source_file, dst_dirpath):
 
         with open(os.path.join(dst_dir_path, standard_ql_name + '.tab'), 'w') as f:
             f.write(text_content.strip())
+        # self.dlg.progressBar.setValue(50)
+    if open_on_finish is True:
+        os.startfile(dst_dir_path)
+    else:
+        pass

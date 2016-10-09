@@ -28,20 +28,29 @@ import resources
 # Import the code for the dialog
 from helper_main_dialog import HelperDialog
 import os.path
+# мои модули
+from ql_exporter import bka_ql_exporter
 
 
 # задание стандартной директории
-def lastUsedDir():
+def lastUsedDir(type='in'):
     settings = QSettings("Innoter Helper", "helper")
     # можно 'C:\\' вместо ''
-    return settings.value("lastUsedDir", str(""))
+    if type == 'in':
+        return settings.value("lastUsedInDir", str(""))
+    elif type == 'out':
+        return settings.value("lastUsedOutDir", str(""))
 
 
 # обновление стандартной директории на последнюю использовавшуюся
-def setLastUsedDir(lastDir):
+def setLastUsedDir(lastDir, type='in'):
     path = QFileInfo(lastDir).absolutePath()
     settings = QSettings("Innoter Helper", "helper")
-    settings.setValue("lastUsedDir", str(path))
+    if type == 'in':
+        settings.setValue("lastUsedInDir", str(path))
+    elif type == 'out':
+        settings.setValue("lastUsedOutDir", str(path))
+
 
 
 class Satellite:
@@ -105,6 +114,7 @@ class Helper:
         # мои переменные
         self.curr_filepath = None
         self.last_used_path = None
+        self.out_dir = None
         self.satellite = Satellite()
 
     # noinspection PyMethodMayBeStatic
@@ -214,6 +224,15 @@ class Helper:
         self.dlg.SENSOR.currentIndexChanged.connect(lambda: self.satellite.set_curr_sat(self.dlg.SENSOR.currentText()))
         self.dlg.INPUTbrowse.clicked.connect(
             lambda: self.select_input_file(sensor=self.satellite.get_curr_sat()))
+        self.dlg.OUTPUTbrowse.clicked.connect(
+            lambda: self.select_output_dir())
+        self.dlg.START.clicked.connect(
+            lambda: bka_ql_exporter(self.curr_filepath, self.out_dir) if self.dlg.browse_on_complete.isChecked() else
+            bka_ql_exporter(self.curr_filepath, self.out_dir, open_on_finish=False))
+
+    # def progress(self):
+    #     self.dlg.progressBar.setValue(50)
+
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
@@ -274,14 +293,18 @@ class Helper:
         if self.curr_filepath != '':
             self.dlg.INPUT.setText(self.curr_filepath)
             setLastUsedDir(os.path.dirname(self.curr_filepath))
+            self.out_dir = os.path.dirname(self.curr_filepath)
+            self.dlg.OUTPUT.setText(self.out_dir)
+
         else:
             self.dlg.INPUT.setText(u'Где взять исходные файлы?')
 
     # TODO сделать select_..._ функцией по типу populate_combo
     def select_output_dir(self):
-        out_dir = QFileDialog.getExistingDirectory(
+        self.out_dir = QFileDialog.getExistingDirectory(
             self.dlg, u"Укажите файл контура ", "", )
-        # записываем в self.last_used_path последний использовавшийся каталог
-        self.last_used_path = os.path.dirname(out_dir)
+        if self.out_dir != '':
+            self.dlg.OUTPUT.setText(self.out_dir)
+        # TODO записать в self.last_used_path последний использовавшийся каталог
 
     # TODO if имя_спутника = set sertain_file_type
