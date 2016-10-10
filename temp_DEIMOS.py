@@ -43,6 +43,7 @@ for dirpath, dirnames, filenames in os.walk(in_path):
             # TODO реализовать через find .//
             # ищем в kml запись, описывающую квиклук
             # http://stackoverflow.com/questions/14853243/parsing-xml-with-namespace-in-python-via-elementtree
+            # if element.tag.endswith('href') или на вход (namespace + tag)
             ql_kml_list = root.findall(".//{http://earth.google.com/kml/2.1}href")
             for i in ql_kml_list:
                 print(i.tag, i.text)
