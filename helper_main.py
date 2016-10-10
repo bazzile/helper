@@ -313,11 +313,9 @@ class Helper:
             self.dlg.OUTPUT.setText(self.out_dir)
             setLastUsedDir(self.out_dir, type='out')
 
-    # TODO if имя_спутника = set sertain_file_type
-
+    # TODO убрать это в импортируемый модуль (для этого нужно разобраться, как ему подключиться к iface)
     def bka_ql_exporter(self, source_file, dst_dirpath, open_on_finish=True):
         src_file = source_file
-        # TODO название директории dst_dir_name/path должно выбираться из Helper
         dst_dir_name = 'QuickLooks'
         dst_dir_path = os.path.join(dst_dirpath, dst_dir_name)
 
