@@ -233,8 +233,8 @@ class Helper:
         self.dlg.OUTPUTbrowse.clicked.connect(
             lambda: self.select_output_dir())
         self.dlg.START.clicked.connect(
-            lambda: self.bka_ql_exporter(self.curr_filepath, self.dlg.OUTPUT.text() if self.dlg.browse_on_complete.isChecked() else
-            self.bka_ql_exporter(self.curr_filepath, self.dlg.OUTPUT.text(), open_on_finish=False)))
+            lambda: self.bka_ql_exporter(self.curr_filepath, self.dlg.OUTPUT.text()) if self.dlg.browse_on_complete.isChecked() else
+            self.bka_ql_exporter(self.curr_filepath, self.dlg.OUTPUT.text(), open_on_finish=False))
 
     # def progress(self):
     #     self.dlg.progressBar.setValue(50)
