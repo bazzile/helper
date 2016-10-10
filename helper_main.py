@@ -236,8 +236,8 @@ class Helper:
             lambda: self.bka_ql_exporter(self.curr_filepath, self.dlg.OUTPUT.text()) if self.dlg.browse_on_complete.isChecked() else
             self.bka_ql_exporter(self.curr_filepath, self.dlg.OUTPUT.text(), open_on_finish=False))
 
-    # def progress(self):
-    #     self.dlg.progressBar.setValue(50)
+    def upd_progress(self, value):
+        self.dlg.progressBar.setValue(value)
 
 
     def unload(self):
