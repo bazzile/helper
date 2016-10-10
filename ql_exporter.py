@@ -70,7 +70,7 @@ def bka_ql_exporter(source_file, dst_dirpath, open_on_finish=True):
 
         with open(os.path.join(dst_dir_path, standard_ql_name + '.tab'), 'w') as f:
             f.write(text_content.strip())
-        # self.dlg.progressBar.setValue(50)
+    # dlg.progressBar.setValue(50)
     if open_on_finish is True:
         os.startfile(dst_dir_path)
     else:

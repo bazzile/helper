@@ -29,7 +29,13 @@ import resources
 from helper_main_dialog import HelperDialog
 import os.path
 # мои модули
-from ql_exporter import bka_ql_exporter
+# from ql_exporter import bka_ql_exporter
+import os
+import shutil
+import xml.etree.ElementTree as ET
+from string import Template
+from PIL import Image
+import zipfile
 
 
 # задание стандартной директории
@@ -227,8 +233,8 @@ class Helper:
         self.dlg.OUTPUTbrowse.clicked.connect(
             lambda: self.select_output_dir())
         self.dlg.START.clicked.connect(
-            lambda: bka_ql_exporter(self.curr_filepath, self.out_dir) if self.dlg.browse_on_complete.isChecked() else
-            bka_ql_exporter(self.curr_filepath, self.out_dir, open_on_finish=False))
+            lambda: self.bka_ql_exporter(self.curr_filepath, self.dlg.OUTPUT.text() if self.dlg.browse_on_complete.isChecked() else
+            self.bka_ql_exporter(self.curr_filepath, self.dlg.OUTPUT.text(), open_on_finish=False)))
 
     # def progress(self):
     #     self.dlg.progressBar.setValue(50)
@@ -302,9 +308,80 @@ class Helper:
     # TODO сделать select_..._ функцией по типу populate_combo
     def select_output_dir(self):
         self.out_dir = QFileDialog.getExistingDirectory(
-            self.dlg, u"Укажите файл контура ", "", )
+            self.dlg, u"Укажите файл контура ", lastUsedDir(type='out'))
         if self.out_dir != '':
             self.dlg.OUTPUT.setText(self.out_dir)
-        # TODO записать в self.last_used_path последний использовавшийся каталог
+            setLastUsedDir(self.out_dir, type='out')
 
     # TODO if имя_спутника = set sertain_file_type
+
+    def bka_ql_exporter(self, source_file, dst_dirpath, open_on_finish=True):
+        src_file = source_file
+        # TODO название директории dst_dir_name/path должно выбираться из Helper
+        dst_dir_name = 'QuickLooks'
+        dst_dir_path = os.path.join(dst_dirpath, dst_dir_name)
+
+        if not os.path.exists(dst_dir_path):
+            os.makedirs(dst_dir_path)
+
+        # парсим kml
+        if src_file.endswith(('.kml', '.KML')):
+            tree = ET.parse(src_file)
+        else:
+            # src_file.endswith(('.kmz', '.KMZ'))
+            with zipfile.ZipFile(src_file) as kmz:
+                for filename in kmz.namelist():
+                    if filename.endswith(('.kml', '.KML')):
+                        # парсим kml
+                        # TODO проверить, закрывается ли kml просле окончания with
+                        with kmz.open(filename, 'r') as kml:
+                            tree = ET.parse(kml)
+                        break
+        root = tree.getroot()
+
+        # ищем в kml все записи, описывающие квиклук
+        ql_kml_list = root.findall(".//GroundOverlay")
+
+        # print(len(q))
+        counter = 0
+        for q in range(len(ql_kml_list)):
+            ql_filename = ql_kml_list[q].find(".//href").text
+            standard_ql_name = ql_filename[:13]
+            # стандартизируем имя и копируем квиклук в целевую директорию, где измеряем его пикс. ширину и высоту
+            ql_dst_path = os.path.join(dst_dir_path, standard_ql_name + '.jpg')
+            if src_file.endswith(('.kml', '.KML')):
+                shutil.copy(os.path.join(os.path.dirname(src_file), ql_filename), ql_dst_path)
+            else:
+                with zipfile.ZipFile(src_file) as kmz:
+                    with kmz.open(ql_filename) as zipped_ql, open(ql_dst_path, 'wb') as f:
+                        shutil.copyfileobj(zipped_ql, f)
+            ql_image_obj = Image.open(ql_dst_path)
+            ql_width, ql_height = ql_image_obj.size[0], ql_image_obj.size[1]
+            coords_str = ql_kml_list[q].find(".//coordinates").text
+            # преобразуем строку с координатами углов в список и разбиваем по 4 точкам
+            coords_lst = coords_str.split('\n')
+            c1, c2, c3, c4 = coords_lst[3], coords_lst[0], coords_lst[1], coords_lst[2]
+            text_content = Template('!table\n'
+                                    '!version 300\n'
+                                    '!charset WindowsCyrillic\n'
+                                    'Definition Table\n'
+                                    '  File "$file_name"\n'
+                                    '  Type "RASTER"\n'
+                                    '  ($map_coords1)  (0.0,0.0) Label "Point 1",\n'
+                                    '  ($map_coords2)  (0.0,$img_hight.0) Label "Point 2",\n'
+                                    '  ($map_coords3)  ($img_width.0,$img_hight.0) Label "Point 3",\n'
+                                    '  ($map_coords4)  ($img_width.0,0.0) Label "Point 4"\n'
+                                    ' CoordSys Earth Projection 1, 0\n')
+            text_content = text_content.substitute(
+                file_name=standard_ql_name + '.jpg', map_coords1=c1, map_coords2=c2, map_coords3=c3,
+                map_coords4=c4,
+                img_hight=str(ql_height), img_width=str(ql_width))
+
+            with open(os.path.join(dst_dir_path, standard_ql_name + '.tab'), 'w') as f:
+                f.write(text_content.strip())
+            counter += 1
+            self.dlg.progressBar.setValue((100*counter/len(ql_kml_list)))
+        if open_on_finish is True:
+            os.startfile(dst_dir_path)
+        else:
+            pass

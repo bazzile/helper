@@ -10,7 +10,7 @@
 name=Innoter Helper
 qgisMinimumVersion=2.0
 description=Plungin that helps you with your geospatial routine
-version=0.1
+version=0.0.1
 author=Innoter
 email=lobanov@innoter.com
 
