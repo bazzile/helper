@@ -381,6 +381,7 @@ class Helper:
                 f.write(text_content.strip())
             counter += 1
             self.dlg.progressBar.setValue((100*counter/len(ql_kml_list)))
+        QMessageBox.information(None, 'Result', u'Готово!\nСоздано квиклуков: ' + str(len(ql_kml_list)))
         if open_on_finish is True:
             os.startfile(dst_dir_path)
         else:
