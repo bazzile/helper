@@ -42,7 +42,7 @@ def bka_ql_exporter(source_file, dst_dirpath, open_on_finish=True):
         # стандартизируем имя и копируем квиклук в целевую директорию, где измеряем его пикс. ширину и высоту
         ql_dst_path = os.path.join(dst_dir_path, standard_ql_name + '.jpg')
         if src_file.endswith(('.kml', '.KML')):
-            shutil.copy(os.path.join(dst_dir_path, ql_filename), ql_dst_path)
+            shutil.copy(os.path.join(os.path.dirname(src_file), ql_filename), ql_dst_path)
         else:
             with zipfile.ZipFile(src_file) as kmz:
                 with kmz.open(ql_filename) as zipped_ql, open(ql_dst_path, 'wb') as f:
