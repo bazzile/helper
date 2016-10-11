@@ -237,9 +237,7 @@ class Helper:
             lambda: self.select_input_file(sensor=self.satellite.get_curr_sat()))
         self.dlg.OUTPUTbrowse.clicked.connect(
             lambda: self.select_output_dir())
-        self.dlg.START.clicked.connect(
-            lambda: self.bka_ql_exporter(self.curr_filepath, self.dlg.OUTPUT.text()) if self.dlg.browse_on_complete.isChecked() else
-            self.bka_ql_exporter(self.curr_filepath, self.dlg.OUTPUT.text(), open_on_finish=False))
+        self.dlg.START.clicked.connect(lambda: self.start_processing())
 
     def upd_progress(self, value):
         self.dlg.progressBar.setValue(value)
@@ -320,8 +318,17 @@ class Helper:
             self.dlg.OUTPUT.setText(self.out_dir)
             setLastUsedDir(self.out_dir, type='out')
 
+    def start_processing(self):
+        sensor = self.satellite.get_curr_sat()
+        source_file = self.curr_filepath
+        dst_path = self.dlg.OUTPUT.text()
+        if sensor == 'BKA':
+            self.bka_ql_exporter(source_file, dst_path)
+        elif sensor == 'DEIMOS2':
+            self.deimos_ql_exporter(source_file, dst_path)
+
     # TODO убрать это в импортируемый модуль (для этого нужно разобраться, как ему подключиться к iface)
-    def bka_ql_exporter(self, source_file, dst_dirpath, open_on_finish=True):
+    def bka_ql_exporter(self, source_file, dst_dirpath):
         src_file = source_file
         dst_dir_name = 'QuickLooks'
         dst_dir_path = os.path.join(dst_dirpath, dst_dir_name)
@@ -372,12 +379,12 @@ class Helper:
             counter += 1
             self.dlg.progressBar.setValue((100*counter/len(ql_kml_list)))
         QMessageBox.information(None, 'Result', u'Готово!\nСоздано квиклуков: ' + str(len(ql_kml_list)))
-        if open_on_finish is True:
+        if self.dlg.browse_on_complete.isChecked():
             os.startfile(dst_dir_path)
         else:
             pass
 
-    def deimos_ql_exporter(self, source_file, dst_dirpath, open_on_finish=True):
+    def deimos_ql_exporter(self, source_file, dst_dirpath):
         @contextlib.contextmanager
         def make_temp_directory():
             temp_dir = tempfile.mkdtemp()
@@ -393,9 +400,12 @@ class Helper:
         with make_temp_directory() as tmpdir:
             with zipfile.ZipFile(source_file, 'r') as zfile:
                 zfile.extractall(tmpdir)
-            ql_list = [name for name in os.listdir(tmpdir) if name.endswith(('.kmz', '.KMZ')) and
-                           name[-7:-4] != 'ALL']
+            # ql_list = [name for name in os.listdir(tmpdir) if name.endswith(('.kmz', '.KMZ')) and
+            #                name[-7:-4] != 'ALL']
+            # QMessageBox.information(None, 'Result', str(len(ql_list)))
             for dirpath, dirnames, filenames in os.walk(tmpdir):
+                ql_list = [filename for filename in filenames if filename.endswith(('.kmz', '.KMZ')) and
+                           filename[-7:-4] != 'ALL']
                 for filename in filenames:
                     if filename.endswith(('.kmz', '.KMZ')) and filename[-7:-4] != 'ALL':
                         in_file = os.path.join(dirpath, filename)
@@ -412,12 +422,12 @@ class Helper:
                         for q in range(len(ql_kml_list)):
                             ql_filename = ql_kml_list[q].find(".//{http://earth.google.com/kml/2.1}name").text
                             standard_ql_name = ql_filename[11:]
-                            ql_dst_path = os.path.join(dst_dirpath, standard_ql_name + '.jpg')
+                            ql_dst_path = os.path.join(dst_dir_path, standard_ql_name + '.jpg')
                             ql_url = ql_kml_list[q].find(".//{http://earth.google.com/kml/2.1}href").text
                             response = requests.get(ql_url)
                             if response.status_code == 200:
                                 i = Image.open(StringIO(response.content))
-                                i.save(ql_dst_path, format='JPEG', subsampling=0, quality=100)
+                                i.save(ql_dst_path, format='JPEG', quality=100)
                             else:
                                 # TODO выводить ошибку "не удалось скачать квиклук с сервера DEIMOS
                                 raise IOError
@@ -435,7 +445,7 @@ class Helper:
                                 f.write(text_content.strip())
                             counter += 1
                             self.dlg.progressBar.setValue((100 * counter / len(ql_list)))
-                        QMessageBox.information(None, 'Result',
-                                                u'Готово!\nСоздано квиклуков: ' + str(len(ql_list)))
-                    break
-
+                    QMessageBox.information(None, 'Result',
+                                            u'Готово!\nСоздано квиклуков: ' + str(len(ql_list)))
+                    if self.dlg.browse_on_complete.isChecked():
+                        os.startfile(dst_dir_path)
