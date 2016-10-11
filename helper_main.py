@@ -34,6 +34,7 @@ from ql_exporter import tab_template
 import os
 import shutil
 import xml.etree.ElementTree as ET
+from time import sleep
 from string import Template
 from PIL import Image
 import zipfile
@@ -400,14 +401,15 @@ class Helper:
         with make_temp_directory() as tmpdir:
             with zipfile.ZipFile(source_file, 'r') as zfile:
                 zfile.extractall(tmpdir)
-            # ql_list = [name for name in os.listdir(tmpdir) if name.endswith(('.kmz', '.KMZ')) and
-            #                name[-7:-4] != 'ALL']
+                ql_list = [f for dp, dn, filenames in os.walk(tmpdir) for f in filenames if f.endswith(('.kmz', '.KMZ'))
+                           and f[-7:-4] != 'ALL']
             # QMessageBox.information(None, 'Result', str(len(ql_list)))
             for dirpath, dirnames, filenames in os.walk(tmpdir):
-                ql_list = [filename for filename in filenames if filename.endswith(('.kmz', '.KMZ')) and
-                           filename[-7:-4] != 'ALL']
+                # ql_list = [filename for filename in filenames if filename.endswith(('.kmz', '.KMZ')) and
+                #            filename[-7:-4] != 'ALL']
                 for filename in filenames:
                     if filename.endswith(('.kmz', '.KMZ')) and filename[-7:-4] != 'ALL':
+                        counter = 0
                         in_file = os.path.join(dirpath, filename)
                         with zipfile.ZipFile(in_file, 'r') as kmz:
                             with kmz.open('doc.kml', 'r') as kml:
@@ -418,13 +420,22 @@ class Helper:
                         # kml_tree = ET.parse(kml_file)
                         root = kml_tree.getroot()
                         ql_kml_list = root.findall(".//{http://earth.google.com/kml/2.1}GroundOverlay")
-                        counter = 0
                         for q in range(len(ql_kml_list)):
                             ql_filename = ql_kml_list[q].find(".//{http://earth.google.com/kml/2.1}name").text
                             standard_ql_name = ql_filename[11:]
                             ql_dst_path = os.path.join(dst_dir_path, standard_ql_name + '.jpg')
                             ql_url = ql_kml_list[q].find(".//{http://earth.google.com/kml/2.1}href").text
                             response = requests.get(ql_url)
+                            # if response.status_code == 200:
+                                # tempf = tempfile.TemporaryFile()
+                                # downloaded = 0
+                                # # скачиваем файл по кускам в 1024 байта (chunks)
+                                # for chunk in response.iter_content(1024):
+                                #     downloaded += len(chunk)
+                                #     tempf.write(chunk)
+                                # i = Image.open(tempf)
+                                # i.save(ql_dst_path, format='JPEG', quality=100)
+                                # tempf.close()
                             if response.status_code == 200:
                                 i = Image.open(StringIO(response.content))
                                 i.save(ql_dst_path, format='JPEG', quality=100)
@@ -439,13 +450,12 @@ class Helper:
                             west = ql_kml_list[q].find(".//{http://earth.google.com/kml/2.1}west").text
                             c1, c2, c3, c4 = ','.join((str(west), str(north))), ','.join((str(east), str(north))), \
                                              ','.join((str(east), str(south))), ','.join((str(west), str(south)))
-                            print c1, c2, c3, c4
                             text_content = tab_template('deimos', standard_ql_name, c1, c2, c3, c4, ql_height, ql_width)
                             with open(os.path.join(dst_dir_path, standard_ql_name + '.tab'), 'w') as f:
                                 f.write(text_content.strip())
                             counter += 1
                             self.dlg.progressBar.setValue((100 * counter / len(ql_list)))
-                    QMessageBox.information(None, 'Result',
-                                            u'Готово!\nСоздано квиклуков: ' + str(len(ql_list)))
-                    if self.dlg.browse_on_complete.isChecked():
-                        os.startfile(dst_dir_path)
+            QMessageBox.information(None, 'Result',
+                                    u'Готово!\nСоздано квиклуков: ' + str(len(ql_list)))
+            if self.dlg.browse_on_complete.isChecked():
+                os.startfile(dst_dir_path)
