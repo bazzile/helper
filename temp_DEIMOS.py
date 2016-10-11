@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
 import os
+import shutil
 import xml.etree.ElementTree as ET
 import zipfile
 from PIL import Image
+from ql_exporter import tab_template
 # from hurry.filesize import size
 import requests
 from tempfile import TemporaryFile
 
 
 in_file = r"E:\RASTER\test\doc.kml"
-out_dir = r"E:\!WORK\L160013_RBA16_deimos2\out"
+dst_dir_path = r"C:\Users\lobanov\.qgis2\python\plugins\Helper\testData\DEIMOS\2016-09-27_6izMHfLhb5\6izMHfLhb5\2015-08-11_DE2_L0R_000000_20150811T073720_20150811T073723_DE2_6195_73D7"
 # out_dir = r"U:\PRJ\2016\SmallForest_2016\1_Гафурийское-Макаровское\!КВИКЛУКИБЛЕА"
-counter = 0
 
 # TODO реализовать через tab-шаблон
 def attr2wld(dirname, CATALOGID, x, y):
@@ -44,13 +45,53 @@ for dirpath, dirnames, filenames in os.walk(in_path):
             # ищем в kml запись, описывающую квиклук
             # http://stackoverflow.com/questions/14853243/parsing-xml-with-namespace-in-python-via-elementtree
             # if element.tag.endswith('href') или на вход (namespace + tag)
-            ql_kml_list = root.findall(".//{http://earth.google.com/kml/2.1}href")
-            for i in ql_kml_list:
-                print(i.tag, i.text)
-            break
-            # for q in range(len(ql_kml_list)):
-            #     ql_filename = ql_kml_list[q].find(".//href").text
-            #     print(ql_filename)
+            ql_kml_list = root.findall(".//{http://earth.google.com/kml/2.1}GroundOverlay")
+            counter = 0
+            for q in range(len(ql_kml_list)):
+                ql_filename = ql_kml_list[q].find(".//{http://earth.google.com/kml/2.1}name").text
+                standard_ql_name = ql_filename[11:]
+                ql_dst_path = os.path.join(dst_dir_path, standard_ql_name + '.png')
+                ql_url = ql_kml_list[q].find(".//{http://earth.google.com/kml/2.1}href").text
+                r = requests.get(ql_url, stream=True)
+                if r.status_code == 200:
+                    with TemporaryFile() as tempf:
+
+                            downloaded = 0
+                            # скачиваем файл по кускам в 1024 байта (chunks)
+                            for chunk in r.iter_content(1024):
+                                downloaded += len(chunk)
+                                tempf.write(chunk)
+                            # на лету конвертируем изначально полученный png в jpg
+                            i = Image.open(open(tempf, 'rb'))
+                            i.save(ql_dst_path)
+                    # with open(ql_dst_path, 'wb') as f:
+                    #         downloaded = 0
+                    #         # скачиваем файл по кускам в 1024 байта (chunks)
+                    #         for chunk in r.iter_content(1024):
+                    #             downloaded += len(chunk)
+                    #             f.write(chunk)
+                else:
+                    # TODO выводить ошибку "не удалось скачать квиклук с сервера DEIMOS
+                    raise IOError
+                ql_image_obj = Image.open(ql_dst_path)
+                ql_width, ql_height = ql_image_obj.size[0], ql_image_obj.size[1]
+                north = ql_kml_list[q].find(".//{http://earth.google.com/kml/2.1}north").text
+                south = ql_kml_list[q].find(".//{http://earth.google.com/kml/2.1}south").text
+                east = ql_kml_list[q].find(".//{http://earth.google.com/kml/2.1}east").text
+                west = ql_kml_list[q].find(".//{http://earth.google.com/kml/2.1}west").text
+                c1, c2, c3, c4 = ','.join((str(west), str(north))), ','.join((str(east), str(north))), \
+                                 ','.join((str(east), str(south))), ','.join((str(west), str(south)))
+                print c1, c2, c3, c4
+                text_content = tab_template(standard_ql_name, c1, c2, c3, c4, ql_height, ql_width, file_type='png')
+                with open(os.path.join(dst_dir_path, standard_ql_name + '.tab'), 'w') as f:
+                    f.write(text_content.strip())
+        break
+            # for i in ql_kml_list:
+            #     print()
+            # break
+            # # for q in range(len(ql_kml_list)):
+            # #     ql_filename = ql_kml_list[q].find(".//href").text
+            # #     print(ql_filename)
 
             # img_name = root[0][1][0].text
             # img_url = root[0][1][1][0].text
