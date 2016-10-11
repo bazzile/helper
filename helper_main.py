@@ -30,6 +30,7 @@ from helper_main_dialog import HelperDialog
 import os.path
 # мои модули
 # from ql_exporter import bka_ql_exporter
+from ql_exporter import tab_template
 import os
 import shutil
 import xml.etree.ElementTree as ET
@@ -359,22 +360,7 @@ class Helper:
             # преобразуем строку с координатами углов в список и разбиваем по 4 точкам
             coords_lst = coords_str.split('\n')
             c1, c2, c3, c4 = coords_lst[3], coords_lst[0], coords_lst[1], coords_lst[2]
-            text_content = Template('!table\n'
-                                    '!version 300\n'
-                                    '!charset WindowsCyrillic\n'
-                                    'Definition Table\n'
-                                    '  File "$file_name"\n'
-                                    '  Type "RASTER"\n'
-                                    '  ($map_coords1)  (0.0,0.0) Label "Point 1",\n'
-                                    '  ($map_coords2)  (0.0,$img_hight.0) Label "Point 2",\n'
-                                    '  ($map_coords3)  ($img_width.0,$img_hight.0) Label "Point 3",\n'
-                                    '  ($map_coords4)  ($img_width.0,0.0) Label "Point 4"\n'
-                                    ' CoordSys Earth Projection 1, 0\n')
-            text_content = text_content.substitute(
-                file_name=standard_ql_name + '.jpg', map_coords1=c1, map_coords2=c2, map_coords3=c3,
-                map_coords4=c4,
-                img_hight=str(ql_height), img_width=str(ql_width))
-
+            text_content = tab_template(standard_ql_name, c1, c2, c3, c4, ql_height, ql_width)
             with open(os.path.join(dst_dir_path, standard_ql_name + '.tab'), 'w') as f:
                 f.write(text_content.strip())
             counter += 1
