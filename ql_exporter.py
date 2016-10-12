@@ -7,7 +7,7 @@ from string import Template
 from PIL import Image
 from StringIO import StringIO
 import zipfile
-import requests
+# import requests
 import contextlib
 import tempfile
 
