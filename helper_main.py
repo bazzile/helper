@@ -65,7 +65,6 @@ def setLastUsedDir(lastDir, type='in'):
         settings.setValue("lastUsedOutDir", str(path))
 
 
-
 class Satellite:
     def __init__(self):
         self.satellite = None
