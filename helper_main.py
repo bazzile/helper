@@ -45,7 +45,6 @@ import urllib
 import tempfile
 import ogr
 from cStringIO import StringIO
-# from temp_TH import th_ql_exporter
 
 
 # задание стандартной директории
@@ -335,6 +334,7 @@ class Helper:
             self.deimos_ql_exporter(source_file, dst_path)
         elif sensor == 'TH':
             self.th_ql_exporter(source_file, dst_path)
+        self.dlg.progressBar.setValue(0)
 
     # TODO убрать это в импортируемый модуль (для этого нужно разобраться, как ему подключиться к iface)
     def bka_ql_exporter(self, source_file, dst_dirpath):
@@ -498,32 +498,32 @@ class Helper:
             ql_list = layer.GetFeatureCount()
             counter = 0
             for img_contour in layer:
-                ql_name = img_contour.GetField('ImgIdDgp')
-                geometry = img_contour.GetGeometryRef()
-                ring = geometry.GetGeometryRef(0)
-                coord_list = ['', '', '', '']
-                list_counter = 0
-                for point_id in range(ring.GetPointCount() - 1):
-                    lon, lat, z = ring.GetPoint(point_id)
-                    coord_list[list_counter] = str(','.join((str(lon), str(lat))))
-                    list_counter += 1
-                ql_path = get_ql_path(ql_name)
-                ql_dst_path = os.path.join(dst_dir_path, ql_name + '_Bro' + '.jpg')
-                shutil.copy(ql_path, ql_dst_path)
-                ql_image_obj = Image.open(ql_path)
-                ql_width, ql_height = ql_image_obj.size[0], ql_image_obj.size[1]
-                del ql_image_obj
-                text_content = tab_template(
-                    'TH', ql_name + '_Bro', coord_list[0], coord_list[3], coord_list[2], coord_list[1], ql_height,
-                    ql_width)
-                with open(os.path.join(dst_dir_path, ql_name + '_Bro' + '.tab'), 'w') as f:
-                    f.write(text_content.strip())
+                    ql_name = img_contour.GetField('ImgIdDgp')
+                    geometry = img_contour.GetGeometryRef()
+                    ring = geometry.GetGeometryRef(0)
+                    coord_list = ['', '', '', '']
+                    list_counter = 0
+                    for point_id in range(ring.GetPointCount() - 1):
+                        lon, lat, z = ring.GetPoint(point_id)
+                        coord_list[list_counter] = str(','.join((str(lon), str(lat))))
+                        list_counter += 1
+                    ql_path = get_ql_path(ql_name)
+                    ql_dst_path = os.path.join(dst_dir_path, ql_name + '_Bro' + '.jpg')
+                    shutil.copy(ql_path, ql_dst_path)
+                    ql_image_obj = Image.open(ql_path)
+                    ql_width, ql_height = ql_image_obj.size[0], ql_image_obj.size[1]
+                    del ql_image_obj
+                    text_content = tab_template(
+                        'TH', ql_name + '_Bro', coord_list[0], coord_list[3], coord_list[2], coord_list[1], ql_height,
+                        ql_width)
+                    with open(os.path.join(dst_dir_path, ql_name + '_Bro' + '.tab'), 'w') as f:
+                        f.write(text_content.strip())
                     counter += 1
-                    self.dlg.progressBar.setValue((100 * counter / len(ql_list)))
-            # del layer
-            # del dataSource
+                    self.dlg.progressBar.setValue((100 * counter / ql_list))
+            del layer
+            del dataSource
         QMessageBox.information(None, 'Result',
-                                u'Готово!\nСоздано квиклуков: ' + str(len(ql_list)))
+                                u'Готово!\nСоздано квиклуков: ' + str(ql_list))
         if self.dlg.browse_on_complete.isChecked():
             os.startfile(dst_dir_path)
 
