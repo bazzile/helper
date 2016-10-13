@@ -13,15 +13,6 @@ import ogr
 from ql_exporter import tab_template
 
 
-# TODO убрать это
-dir = os.path.dirname(__file__)
-src_path = os.path.join(dir, r"testData\TH\185205596")
-dst_dir_path = os.path.join(dir, src_path)
-
-src_file =r"C:\Users\lobanov\.qgis2\python\plugins\Helper\testData\TH\185205596\185205596.shp"
-src_zip_file = r"testData\TH\185205596.zip"
-
-
 def th_ql_exporter(source_file, dst_dirpath):
     src_file = source_file
     dst_dir_name = 'QuickLooks'
@@ -43,7 +34,7 @@ def th_ql_exporter(source_file, dst_dirpath):
                 return ql_path
 
     with make_temp_directory() as tmpdir:
-        with zipfile.ZipFile(src_zip_file, 'r') as zfile:
+        with zipfile.ZipFile(src_file, 'r') as zfile:
             zfile.extractall(tmpdir)
 
         ql_path_list = []
@@ -59,6 +50,8 @@ def th_ql_exporter(source_file, dst_dirpath):
         driver = ogr.GetDriverByName('ESRI Shapefile')
         dataSource = driver.Open(src_shape, 0)
         layer = dataSource.GetLayer(0)
+        counter = layer.GetFeatureCount()
+        print counter
         for img_contour in layer:
             ql_name = img_contour.GetField('ImgIdDgp')
             geometry = img_contour.GetGeometryRef()
@@ -81,4 +74,3 @@ def th_ql_exporter(source_file, dst_dirpath):
             with open(os.path.join(dst_dir_path, ql_name + '_Bro' + '.tab'), 'w') as f:
                 f.write(text_content.strip())
         del layer, dataSource
-th_ql_exporter(src_zip_file, r"C:\Users\lobanov\.qgis2\python\plugins\Helper\testData\TH")

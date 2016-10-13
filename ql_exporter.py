@@ -30,6 +30,9 @@ def tab_template(sensor, file_name, map_coords1, map_coords2, map_coords3, map_c
     elif sensor == 'deimos':
         point2 = '  ($map_coords2)  ($img_width.0,0.0) Label "Point 2",\n'
         point4 = '  ($map_coords4)  (0.0,$img_hight.0) Label "Point 4"\n'
+    else:
+        point2 = '  ($map_coords2)  (0.0,$img_hight.0) Label "Point 2",\n'
+        point4 = '  ($map_coords4)  ($img_width.0,0.0) Label "Point 4"\n'
     text_content = Template('!table\n'
                             '!version 300\n'
                             '!charset WindowsCyrillic\n\n'
