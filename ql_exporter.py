@@ -45,7 +45,7 @@ def tab_template(sensor, file_name, map_coords1, map_coords2, map_coords3, map_c
                             # '  ($map_coords4)  ($img_width.0,0.0) Label "Point 4"\n'
                             ' CoordSys Earth Projection 1, 0\n')
     return text_content.substitute(
-        file_name=file_name.split('.')[0] + '.jpg', map_coords1=map_coords1, map_coords2=map_coords2,
+        file_name=os.path.splitext(file_name)[0] + '.jpg', map_coords1=map_coords1, map_coords2=map_coords2,
         map_coords3=map_coords3, map_coords4=map_coords4, img_hight=str(img_hight), img_width=str(img_width))
 
 
@@ -171,7 +171,6 @@ def th_ql_exporter(source_file, dst_dirpath):
         layer = dataSource.GetLayer(0)
         ql_list = layer.GetFeatureCount()
         counter = 0
-        print counter
         for img_contour in layer:
             ql_name = img_contour.GetField('ImgIdDgp')
             geometry = img_contour.GetGeometryRef()
@@ -198,3 +197,42 @@ def th_ql_exporter(source_file, dst_dirpath):
             # этот callback позволяет отслеживать прогресс функции в helper_main
             yield percent_done, ql_list
         del layer, dataSource
+
+
+def zy_ql_exporter(source_dir, dst_dirpath):
+    for dirpath, dirnames, filenames in os.walk(source_dir):
+        for filename in filenames:
+            if filename.endswith(('.shp', '.SHP')):
+                shape_filepath = os.path.join(dirpath, filename)
+                driver = ogr.GetDriverByName('ESRI Shapefile')
+                dataSource = driver.Open(shape_filepath, 0)
+                layer = dataSource.GetLayer(0)
+                ql_list = layer.GetFeatureCount()
+                counter = 0
+                for img_contour in layer:
+                    ql_name_w_type = img_contour.GetField('browsefile')
+                    ql_name = os.path.splitext(img_contour.GetField('browsefile'))[0]
+                    geometry = img_contour.GetGeometryRef()
+                    ring = geometry.GetGeometryRef(0)
+                    coord_list = ['', '', '', '']
+                    list_counter = 0
+                    for point_id in range(ring.GetPointCount() - 1):
+                        lon, lat, z = ring.GetPoint(point_id)
+                        coord_list[list_counter] = str(','.join((str(lon), str(lat))))
+                        list_counter += 1
+                    ql_path = os.path.join(os.path.dirname(shape_filepath), ql_name_w_type)
+                    ql_dst_path = os.path.join(dst_dirpath, ql_name_w_type)
+                    shutil.copy(ql_path, ql_dst_path)
+                    ql_image_obj = Image.open(ql_path)
+                    ql_width, ql_height = ql_image_obj.size[0], ql_image_obj.size[1]
+                    del ql_image_obj
+                    text_content = tab_template(
+                        'ZY', ql_name, coord_list[0], coord_list[3], coord_list[2], coord_list[1],
+                        ql_height, ql_width)
+                    with open(os.path.join(dst_dirpath, ql_name + '.tab'), 'w') as f:
+                        f.write(text_content.strip())
+                    counter += 1
+                    percent_done = 100 * counter / ql_list
+                    # TODO разобраться, как (и стоит ли) показывать общий прогресс всех архивов разом (общий counter)
+                    yield percent_done, ql_list
+                del layer, dataSource
