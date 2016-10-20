@@ -3,6 +3,8 @@
 
 import os
 import shutil
+import contextlib
+import tempfile
 
 
 def make_out_dir(dst_dirpath):
@@ -12,3 +14,13 @@ def make_out_dir(dst_dirpath):
     if not os.path.exists(dst_dir_path):
         os.makedirs(dst_dir_path)
     return dst_dir_path
+
+
+@contextlib.contextmanager
+def make_temp_directory():
+    """Добавляет возможность создавать временную директорию с помощью контекста with (отсутствует в pyhton 2)"""
+    temp_dir = tempfile.mkdtemp()
+    try:
+        yield temp_dir
+    finally:
+        shutil.rmtree(temp_dir)
