@@ -11,6 +11,7 @@ import zipfile
 from osgeo import ogr
 import contextlib
 import tempfile
+import auxiliary_functions
 
 
 def tab_template(sensor, file_name, map_coords1, map_coords2, map_coords3, map_coords4, img_hight, img_width):
@@ -179,23 +180,14 @@ def bka_ql_exporter(source_file, dst_dirpath, open_on_finish=True):
 
 
 def th_ql_exporter(source_file, dst_dirpath):
-    src_file = source_file
-
-    @contextlib.contextmanager
-    def make_temp_directory():
-        temp_dir = tempfile.mkdtemp()
-        try:
-            yield temp_dir
-        finally:
-            shutil.rmtree(temp_dir)
 
     def get_ql_path(qiucklook_name):
         for ql_path in ql_path_list:
             if qiucklook_name == ql_path.split('.')[-2][-46:-4]:
                 return ql_path
 
-    with make_temp_directory() as tmpdir:
-        with zipfile.ZipFile(src_file, 'r') as zfile:
+    with auxiliary_functions.make_temp_directory() as tmpdir:
+        with zipfile.ZipFile(source_file, 'r') as zfile:
             zfile.extractall(tmpdir)
 
         ql_path_list = []
@@ -237,5 +229,6 @@ def th_ql_exporter(source_file, dst_dirpath):
                 f.write(text_content.strip())
             counter += 1
             percent_done = 100 * counter / ql_list
+            # этот callback позволяет отслеживать прогресс функции в helper_main
             yield percent_done, ql_list
         del layer, dataSource
