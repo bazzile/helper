@@ -346,7 +346,7 @@ class Helper:
         source_file = self.curr_filepath
         dst_path = auxiliary_functions.make_out_dir(self.dlg.OUTPUT.text())
         if sensor == 'BKA':
-            self.bka_ql_exporter(source_file, dst_path)
+            self.observe_progress(ql_exporter.bka_ql_exporter(source_file, dst_path))
         elif sensor == 'DEIMOS2':
             self.observe_progress(ql_exporter.deimos_ql_exporter(source_file, dst_path))
         elif sensor == 'TH':
@@ -355,61 +355,3 @@ class Helper:
         if self.dlg.browse_on_complete.isChecked():
             os.startfile(dst_path)
         self.dlg.progressBar.setValue(0)
-
-    # TODO убрать это в импортируемый модуль (для этого нужно разобраться, как ему подключиться к iface)
-    def bka_ql_exporter(self, source_file, dst_dirpath):
-        src_file = source_file
-        dst_dir_name = 'QuickLooks'
-        dst_dir_path = os.path.join(dst_dirpath, dst_dir_name)
-
-        if not os.path.exists(dst_dir_path):
-            os.makedirs(dst_dir_path)
-
-        # парсим kml
-        if src_file.endswith(('.kml', '.KML')):
-            tree = ET.parse(src_file)
-        else:
-            # src_file.endswith(('.kmz', '.KMZ'))
-            with zipfile.ZipFile(src_file) as kmz:
-                for filename in kmz.namelist():
-                    if filename.endswith(('.kml', '.KML')):
-                        # парсим kml
-                        # TODO проверить, закрывается ли kml просле окончания with
-                        with kmz.open(filename, 'r') as kml:
-                            tree = ET.parse(kml)
-                        break
-        root = tree.getroot()
-
-        # ищем в kml все записи, описывающие квиклук
-        ql_kml_list = root.findall(".//GroundOverlay")
-
-        # print(len(q))
-        counter = 0
-        for q in range(len(ql_kml_list)):
-            ql_filename = ql_kml_list[q].find(".//href").text
-            standard_ql_name = ql_filename[:13]
-            # стандартизируем имя и копируем квиклук в целевую директорию, где измеряем его пикс. ширину и высоту
-            ql_dst_path = os.path.join(dst_dir_path, standard_ql_name + '.jpg')
-            if src_file.endswith(('.kml', '.KML')):
-                shutil.copy(os.path.join(os.path.dirname(src_file), ql_filename), ql_dst_path)
-            else:
-                with zipfile.ZipFile(src_file) as kmz:
-                    with kmz.open(ql_filename) as zipped_ql, open(ql_dst_path, 'wb') as f:
-                        shutil.copyfileobj(zipped_ql, f)
-            ql_image_obj = Image.open(ql_dst_path)
-            ql_width, ql_height = ql_image_obj.size[0], ql_image_obj.size[1]
-            del ql_image_obj
-            coords_str = ql_kml_list[q].find(".//coordinates").text
-            # преобразуем строку с координатами углов в список и разбиваем по 4 точкам
-            coords_lst = coords_str.split('\n')
-            c1, c2, c3, c4 = coords_lst[3], coords_lst[0], coords_lst[1], coords_lst[2]
-            text_content = ql_exporter.tab_template('bka', standard_ql_name, c1, c2, c3, c4, ql_height, ql_width)
-            with open(os.path.join(dst_dir_path, standard_ql_name + '.tab'), 'w') as f:
-                f.write(text_content.strip())
-            counter += 1
-            self.dlg.progressBar.setValue((100*counter/len(ql_kml_list)))
-        QMessageBox.information(None, 'Result', u'Готово!\nСоздано квиклуков: ' + str(len(ql_kml_list)))
-        if self.dlg.browse_on_complete.isChecked():
-            os.startfile(dst_dir_path)
-        else:
-            pass
