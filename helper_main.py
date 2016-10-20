@@ -328,6 +328,7 @@ class Helper:
             setLastUsedDir(self.out_dir, type='out')
 
     def observe_progress(self, callback=None):
+        """Функция для отслеживания прогресса обработки в ql_exporter с помощью callbacks"""
         try:
             for response in callback:
                 percent, file_number = response[0], response[1]
@@ -347,7 +348,7 @@ class Helper:
         if sensor == 'BKA':
             self.bka_ql_exporter(source_file, dst_path)
         elif sensor == 'DEIMOS2':
-            self.deimos_ql_exporter(source_file, dst_path)
+            self.observe_progress(ql_exporter.deimos_ql_exporter(source_file, dst_path))
         elif sensor == 'TH':
             self.observe_progress(ql_exporter.th_ql_exporter(source_file, dst_path))
         # TODO вынести аргумент dst_path в единое место?
@@ -412,67 +413,3 @@ class Helper:
             os.startfile(dst_dir_path)
         else:
             pass
-
-    def deimos_ql_exporter(self, source_file, dst_dirpath):
-        @contextlib.contextmanager
-        def make_temp_directory():
-            temp_dir = tempfile.mkdtemp()
-            try:
-                yield temp_dir
-            finally:
-                shutil.rmtree(temp_dir)
-        # TODO следующий блок дублируется в БКА.
-        dst_dir_name = 'QuickLooks'
-        dst_dir_path = os.path.join(dst_dirpath, dst_dir_name)
-        if not os.path.exists(dst_dir_path):
-            os.makedirs(dst_dir_path)
-        with make_temp_directory() as tmpdir:
-            with zipfile.ZipFile(source_file, 'r') as zfile:
-                zfile.extractall(tmpdir)
-                ql_list = [f for dp, dn, filenames in os.walk(tmpdir) for f in filenames if f.endswith(('.kmz', '.KMZ'))
-                           and f[-7:-4] != 'ALL']
-            # QMessageBox.information(None, 'Result', str(len(ql_list)))
-            for dirpath, dirnames, filenames in os.walk(tmpdir):
-                counter = 0
-                for filename in filenames:
-                    if filename.endswith(('.kmz', '.KMZ')) and filename[-7:-4] != 'ALL':
-                        in_file = os.path.join(dirpath, filename)
-                        with zipfile.ZipFile(in_file, 'r') as kmz:
-                            with kmz.open('doc.kml', 'r') as kml:
-                                kml_tree = ET.parse(kml)
-                        root = kml_tree.getroot()
-                        ql_kml_list = root.findall(".//{http://earth.google.com/kml/2.1}GroundOverlay")
-                        for q in range(len(ql_kml_list)):
-                            ql_filename = ql_kml_list[q].find(".//{http://earth.google.com/kml/2.1}name").text
-                            standard_ql_name = ql_filename[11:]
-                            ql_dst_path = os.path.join(dst_dir_path, standard_ql_name + '.jpg')
-                            ql_url = ql_kml_list[q].find(".//{http://earth.google.com/kml/2.1}href").text
-                            content = StringIO(urllib.urlopen(ql_url).read())
-                            i = Image.open(content)
-                            i.save(ql_dst_path, format='JPEG', quality=80)
-                            del i
-                            # response = requests.get(ql_url)
-                            # if response.status_code == 200:
-                            #     i = Image.open(StringIO(response.content))
-                            #     i.save(ql_dst_path, format='JPEG', quality=80)
-                            # else:
-                            #     # TODO выводить ошибку "не удалось скачать квиклук с сервера DEIMOS
-                            #     raise IOError
-                            ql_image_obj = Image.open(ql_dst_path)
-                            ql_width, ql_height = ql_image_obj.size[0], ql_image_obj.size[1]
-                            del ql_image_obj
-                            north = ql_kml_list[q].find(".//{http://earth.google.com/kml/2.1}north").text
-                            south = ql_kml_list[q].find(".//{http://earth.google.com/kml/2.1}south").text
-                            east = ql_kml_list[q].find(".//{http://earth.google.com/kml/2.1}east").text
-                            west = ql_kml_list[q].find(".//{http://earth.google.com/kml/2.1}west").text
-                            c1, c2, c3, c4 = ','.join((str(west), str(north))), ','.join((str(east), str(north))), \
-                                             ','.join((str(east), str(south))), ','.join((str(west), str(south)))
-                            text_content = ql_exporter.tab_template('deimos', standard_ql_name, c1, c2, c3, c4, ql_height, ql_width)
-                            with open(os.path.join(dst_dir_path, standard_ql_name + '.tab'), 'w') as f:
-                                f.write(text_content.strip())
-                            counter += 1
-                            self.dlg.progressBar.setValue((100 * counter / len(ql_list)))
-            QMessageBox.information(None, 'Result',
-                                    u'Готово!\nСоздано квиклуков: ' + str(len(ql_list)))
-            if self.dlg.browse_on_complete.isChecked():
-                os.startfile(dst_dir_path)
