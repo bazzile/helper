@@ -59,8 +59,8 @@ class Satellite:
     def __init__(self):
         self.satellite = None
         """"Задаём список доступных спутников"""
-        self.sat_list = ["DEIMOS2", "BKA", "TH", ]
-        # "TRIPLESAT",  "GF1", "ZY3", "GF2", "KAZEOSAT1", "KAZEOSAT2", "ALOS",
+        self.sat_list = ["DEIMOS2", "BKA", "TH", "GF1-2, ZY3"]
+        # "TRIPLESAT", "KAZEOSAT1", "KAZEOSAT2", "ALOS",
         #                  "PRISM",
         #                  "DG/WV-QB-IK-GE", "SPOT5", "SPOT67", "KOMPSAT2", "KOMPSAT3", ]
 
@@ -284,25 +284,36 @@ class Helper:
                 combo.setCurrentIndex(0)
         combo.blockSignals(False)
 
+    #  TODO разобраться с окончаниями elif - в конце можно убрать дубликаты кода
     def select_input_file(self, sensor):
-        if sensor == 'BKA':
-            file_format = u' БКА (*.kml *.kmz *.KML *.KMZ)'
-        elif sensor == 'DEIMOS2':
-            file_format = u' Deimos-2 (*.zip *.ZIP)'
-        elif sensor == 'TH':
-            file_format = u' TH (*.zip *.ZIP)'
+        # на вход идёт не файл, а директория, поэтому выводим в отдельный блок
+        if sensor == 'GF1-2, ZY3':
+            self.curr_filepath = QFileDialog.getExistingDirectory(self.dlg, u"Укажите файл контура ", lastUsedDir())
+            if self.curr_filepath != '':
+                self.dlg.INPUT.setText(self.curr_filepath)
+                setLastUsedDir(self.curr_filepath)
+                self.out_dir = self.curr_filepath
+                self.dlg.OUTPUT.setText(self.out_dir)
+            else:
+                self.dlg.INPUT.setText(u'Где взять исходные файлы?')
         else:
-            file_format = u'??? (Сенсор не задан)'
-        self.curr_filepath = QFileDialog.getOpenFileName(
-                self.dlg, u"Укажите файл контура ", lastUsedDir(), file_format)
-        if self.curr_filepath != '':
-            self.dlg.INPUT.setText(self.curr_filepath)
-            setLastUsedDir(os.path.dirname(self.curr_filepath))
-            self.out_dir = os.path.dirname(self.curr_filepath)
-            self.dlg.OUTPUT.setText(self.out_dir)
-
-        else:
-            self.dlg.INPUT.setText(u'Где взять исходные файлы?')
+            if sensor == 'BKA':
+                file_format = u' БКА (*.kml *.kmz *.KML *.KMZ)'
+            elif sensor == 'DEIMOS2':
+                file_format = u' Deimos-2 (*.zip *.ZIP)'
+            elif sensor == 'TH':
+                file_format = u' TH (*.zip *.ZIP)'
+            else:
+                file_format = u'??? (Сенсор не задан)'
+            self.curr_filepath = QFileDialog.getOpenFileName(
+                    self.dlg, u"Укажите файл контура ", lastUsedDir(), file_format)
+            if self.curr_filepath != '':
+                self.dlg.INPUT.setText(self.curr_filepath)
+                setLastUsedDir(os.path.dirname(self.curr_filepath))
+                self.out_dir = os.path.dirname(self.curr_filepath)
+                self.dlg.OUTPUT.setText(self.out_dir)
+            else:
+                self.dlg.INPUT.setText(u'Где взять исходные файлы?')
 
     # TODO сделать select_..._ функцией по типу populate_combo
     def select_output_dir(self):
@@ -336,6 +347,8 @@ class Helper:
             self.observe_progress(ql_exporter.deimos_ql_exporter(source_file, dst_path))
         elif sensor == 'TH':
             self.observe_progress(ql_exporter.th_ql_exporter(source_file, dst_path))
+        elif sensor == 'GF1-2, ZY3':
+            self.observe_progress(ql_exporter.zy_ql_exporter(source_file, dst_path))
         # TODO вынести аргумент dst_path в единое место?
         if self.dlg.browse_on_complete.isChecked():
             os.startfile(dst_path)
