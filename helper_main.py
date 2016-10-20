@@ -31,7 +31,7 @@ from helper_main_dialog import HelperDialog
 import os.path
 # мои модули
 # from ql_exporter import bka_ql_exporter
-from ql_exporter import tab_template
+# from ql_exporter import tab_template
 import os
 import shutil
 import xml.etree.ElementTree as ET
@@ -43,8 +43,11 @@ import contextlib
 # import requests
 import urllib
 import tempfile
-import ogr
+from osgeo import ogr
 from cStringIO import StringIO
+# импорт функциональных модулей
+import ql_exporter
+import auxiliary_functions
 
 
 # задание стандартной директории
@@ -324,16 +327,32 @@ class Helper:
             self.dlg.OUTPUT.setText(self.out_dir)
             setLastUsedDir(self.out_dir, type='out')
 
+    def observe_progress(self, callback=None):
+        try:
+            for response in callback:
+                percent, file_number = response[0], response[1]
+                self.dlg.progressBar.setValue(percent)
+                if percent == 100:
+                    QMessageBox.information(None, 'Result',
+                                            u'Готово!\nСоздано квиклуков: ' + str(file_number))
+
+        except TypeError:
+            print('callback function must be a generator function that yields integer values')
+            raise
+
     def start_processing(self):
         sensor = self.satellite.get_curr_sat()
         source_file = self.curr_filepath
-        dst_path = self.dlg.OUTPUT.text()
+        dst_path = auxiliary_functions.make_out_dir(self.dlg.OUTPUT.text())
         if sensor == 'BKA':
             self.bka_ql_exporter(source_file, dst_path)
         elif sensor == 'DEIMOS2':
             self.deimos_ql_exporter(source_file, dst_path)
         elif sensor == 'TH':
-            self.th_ql_exporter(source_file, dst_path)
+            self.observe_progress(ql_exporter.th_ql_exporter(source_file, dst_path))
+        # TODO вынести аргумент dst_path в единое место?
+        if self.dlg.browse_on_complete.isChecked():
+            os.startfile(dst_path)
         self.dlg.progressBar.setValue(0)
 
     # TODO убрать это в импортируемый модуль (для этого нужно разобраться, как ему подключиться к iface)
@@ -383,7 +402,7 @@ class Helper:
             # преобразуем строку с координатами углов в список и разбиваем по 4 точкам
             coords_lst = coords_str.split('\n')
             c1, c2, c3, c4 = coords_lst[3], coords_lst[0], coords_lst[1], coords_lst[2]
-            text_content = tab_template('bka', standard_ql_name, c1, c2, c3, c4, ql_height, ql_width)
+            text_content = ql_exporter.tab_template('bka', standard_ql_name, c1, c2, c3, c4, ql_height, ql_width)
             with open(os.path.join(dst_dir_path, standard_ql_name + '.tab'), 'w') as f:
                 f.write(text_content.strip())
             counter += 1
@@ -448,7 +467,7 @@ class Helper:
                             west = ql_kml_list[q].find(".//{http://earth.google.com/kml/2.1}west").text
                             c1, c2, c3, c4 = ','.join((str(west), str(north))), ','.join((str(east), str(north))), \
                                              ','.join((str(east), str(south))), ','.join((str(west), str(south)))
-                            text_content = tab_template('deimos', standard_ql_name, c1, c2, c3, c4, ql_height, ql_width)
+                            text_content = ql_exporter.tab_template('deimos', standard_ql_name, c1, c2, c3, c4, ql_height, ql_width)
                             with open(os.path.join(dst_dir_path, standard_ql_name + '.tab'), 'w') as f:
                                 f.write(text_content.strip())
                             counter += 1
@@ -457,73 +476,3 @@ class Helper:
                                     u'Готово!\nСоздано квиклуков: ' + str(len(ql_list)))
             if self.dlg.browse_on_complete.isChecked():
                 os.startfile(dst_dir_path)
-
-    def th_ql_exporter(self, source_file, dst_dirpath):
-        @contextlib.contextmanager
-        def make_temp_directory():
-            temp_dir = tempfile.mkdtemp()
-            try:
-                yield temp_dir
-            finally:
-                shutil.rmtree(temp_dir)
-
-        src_file = source_file
-        dst_dir_name = 'QuickLooks'
-        dst_dir_path = os.path.join(dst_dirpath, dst_dir_name)
-        if not os.path.exists(dst_dir_path):
-            os.makedirs(dst_dir_path)
-
-        def get_ql_path(qiucklook_name):
-            for ql_path in ql_path_list:
-                if qiucklook_name == ql_path.split('.')[-2][-46:-4]:
-                    return ql_path
-
-        with make_temp_directory() as tmpdir:
-            with zipfile.ZipFile(src_file, 'r') as zfile:
-                zfile.extractall(tmpdir)
-
-            ql_path_list = []
-            src_shape = ''
-            for dirpath, dirnames, filenames in os.walk(tmpdir):
-                for filename in filenames:
-                    if filename.endswith(('.jpg', '.JPG')):
-                        ql_path_list.append(os.path.join(tmpdir, filename))
-                    if filename.endswith(('.shp', '.SHP')):
-                        src_shape = os.path.join(tmpdir, filename)
-                        continue
-
-            driver = ogr.GetDriverByName('ESRI Shapefile')
-            dataSource = driver.Open(src_shape, 0)
-            layer = dataSource.GetLayer(0)
-            ql_list = layer.GetFeatureCount()
-            counter = 0
-            for img_contour in layer:
-                    ql_name = img_contour.GetField('ImgIdDgp')
-                    geometry = img_contour.GetGeometryRef()
-                    ring = geometry.GetGeometryRef(0)
-                    coord_list = ['', '', '', '']
-                    list_counter = 0
-                    for point_id in range(ring.GetPointCount() - 1):
-                        lon, lat, z = ring.GetPoint(point_id)
-                        coord_list[list_counter] = str(','.join((str(lon), str(lat))))
-                        list_counter += 1
-                    ql_path = get_ql_path(ql_name)
-                    ql_dst_path = os.path.join(dst_dir_path, ql_name + '_Bro' + '.jpg')
-                    shutil.copy(ql_path, ql_dst_path)
-                    ql_image_obj = Image.open(ql_path)
-                    ql_width, ql_height = ql_image_obj.size[0], ql_image_obj.size[1]
-                    del ql_image_obj
-                    text_content = tab_template(
-                        'TH', ql_name + '_Bro', coord_list[0], coord_list[3], coord_list[2], coord_list[1], ql_height,
-                        ql_width)
-                    with open(os.path.join(dst_dir_path, ql_name + '_Bro' + '.tab'), 'w') as f:
-                        f.write(text_content.strip())
-                    counter += 1
-                    self.dlg.progressBar.setValue((100 * counter / ql_list))
-            del layer
-            del dataSource
-        QMessageBox.information(None, 'Result',
-                                u'Готово!\nСоздано квиклуков: ' + str(ql_list))
-        if self.dlg.browse_on_complete.isChecked():
-            os.startfile(dst_dir_path)
-

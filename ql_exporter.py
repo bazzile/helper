@@ -8,6 +8,7 @@ from PIL import Image
 from StringIO import StringIO
 import zipfile
 # import requests
+from osgeo import ogr
 import contextlib
 import tempfile
 
@@ -176,3 +177,65 @@ def bka_ql_exporter(source_file, dst_dirpath, open_on_finish=True):
     else:
         pass
 
+
+def th_ql_exporter(source_file, dst_dirpath):
+    src_file = source_file
+
+    @contextlib.contextmanager
+    def make_temp_directory():
+        temp_dir = tempfile.mkdtemp()
+        try:
+            yield temp_dir
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def get_ql_path(qiucklook_name):
+        for ql_path in ql_path_list:
+            if qiucklook_name == ql_path.split('.')[-2][-46:-4]:
+                return ql_path
+
+    with make_temp_directory() as tmpdir:
+        with zipfile.ZipFile(src_file, 'r') as zfile:
+            zfile.extractall(tmpdir)
+
+        ql_path_list = []
+        src_shape = ''
+        for dirpath, dirnames, filenames in os.walk(tmpdir):
+            for filename in filenames:
+                if filename.endswith(('.jpg', '.JPG')):
+                    ql_path_list.append(os.path.join(tmpdir, filename))
+                if filename.endswith(('.shp', '.SHP')):
+                    src_shape = os.path.join(tmpdir, filename)
+                    continue
+
+        driver = ogr.GetDriverByName('ESRI Shapefile')
+        dataSource = driver.Open(src_shape, 0)
+        layer = dataSource.GetLayer(0)
+        ql_list = layer.GetFeatureCount()
+        counter = 0
+        print counter
+        for img_contour in layer:
+            ql_name = img_contour.GetField('ImgIdDgp')
+            geometry = img_contour.GetGeometryRef()
+            ring = geometry.GetGeometryRef(0)
+            # numpoints = ring.GetPointCount()
+            coord_list = ['', '', '', '']
+            list_counter = 0
+            for point_id in range(ring.GetPointCount() - 1):
+                lon, lat, z = ring.GetPoint(point_id)
+                coord_list[list_counter] = str(','.join((str(lon), str(lat))))
+                list_counter += 1
+            ql_path = get_ql_path(ql_name)
+            ql_dst_path = os.path.join(dst_dirpath, ql_name + '_Bro' + '.jpg')
+            shutil.copy(ql_path, ql_dst_path)
+            ql_image_obj = Image.open(ql_path)
+            ql_width, ql_height = ql_image_obj.size[0], ql_image_obj.size[1]
+            del ql_image_obj
+            text_content = tab_template(
+                'TH', ql_name + '_Bro', coord_list[0], coord_list[3], coord_list[2], coord_list[1], ql_height, ql_width)
+            with open(os.path.join(dst_dirpath, ql_name + '_Bro' + '.tab'), 'w') as f:
+                f.write(text_content.strip())
+            counter += 1
+            percent_done = 100 * counter / ql_list
+            yield percent_done, ql_list
+        del layer, dataSource
