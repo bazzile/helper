@@ -26,6 +26,7 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from qgis.core import *
 # Initialize Qt resources from file resources.py
+import resources
 # Import the code for the dialog
 from helper_main_dialog import HelperDialog
 import os.path
