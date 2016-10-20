@@ -21,31 +21,15 @@
  *                                                                         *
  ***************************************************************************/
 """
+import os
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from qgis.core import *
 # Initialize Qt resources from file resources.py
-import resources
 # Import the code for the dialog
 from helper_main_dialog import HelperDialog
 import os.path
-# мои модули
-# from ql_exporter import bka_ql_exporter
-# from ql_exporter import tab_template
-import os
-import shutil
-import xml.etree.ElementTree as ET
-from time import sleep
-from string import Template
-from PIL import Image
-import zipfile
-import contextlib
-# import requests
-import urllib
-import tempfile
-from osgeo import ogr
-from cStringIO import StringIO
-# импорт функциональных модулей
+# импорт моих функциональных модулей
 import ql_exporter
 import auxiliary_functions
 
