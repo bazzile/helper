@@ -49,6 +49,22 @@ def tab_template(sensor, file_name, map_coords1, map_coords2, map_coords3, map_c
         map_coords3=map_coords3, map_coords4=map_coords4, img_hight=str(img_hight), img_width=str(img_width))
 
 
+def get_valid_column_name(col_name_list, layer):
+    for col_name in col_name_list:
+        img_name = None
+        try:
+            img_contour = layer.GetFeature(0)
+            img_name = img_contour.GetField(col_name)
+            print img_name
+            if img_name is not None:
+                return col_name
+            else:
+                continue
+        finally:
+            if img_name is None:
+                raise Exception(u'Поля {} не содержат названия снимков. Проверье shp-файл'.format(str(col_name_list)))
+
+
 def bka_ql_exporter(source_file, dst_dirpath):
     # парсим kml
     if source_file.endswith(('.kml', '.KML')):
@@ -151,7 +167,6 @@ def th_ql_exporter(source_file, dst_dirpath):
         for ql_path in ql_path_list:
             if qiucklook_name == ql_path.split('.')[-2][-46:-4]:
                 return ql_path
-
     with auxiliary_functions.make_temp_directory() as tmpdir:
         with zipfile.ZipFile(source_file, 'r') as zfile:
             zfile.extractall(tmpdir)
@@ -171,8 +186,9 @@ def th_ql_exporter(source_file, dst_dirpath):
         layer = dataSource.GetLayer(0)
         ql_list = layer.GetFeatureCount()
         counter = 0
+        col_name = get_valid_column_name(('ImgIdDgp', 'ImgIdDfp'), layer)
         for img_contour in layer:
-            ql_name = img_contour.GetField('ImgIdDgp')
+            ql_name = img_contour.GetField(col_name)
             geometry = img_contour.GetGeometryRef()
             ring = geometry.GetGeometryRef(0)
             # numpoints = ring.GetPointCount()
@@ -195,7 +211,7 @@ def th_ql_exporter(source_file, dst_dirpath):
             counter += 1
             percent_done = 100 * counter / ql_list
             # этот callback позволяет отслеживать прогресс функции в helper_main
-            yield percent_done, ql_list
+            # yield percent_done, ql_list
         del layer, dataSource
 
 
@@ -236,3 +252,5 @@ def zy_ql_exporter(source_dir, dst_dirpath):
                     # TODO разобраться, как (и стоит ли) показывать общий прогресс всех архивов разом (общий counter)
                     yield percent_done, ql_list
                 del layer, dataSource
+
+th_ql_exporter(r"E:\Misc\TH\TH-1.zip", r"E:\Misc\TH")
