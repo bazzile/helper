@@ -225,6 +225,14 @@ class Helper:
 
     def runGui(self):
         self.dlg.SENSOR.currentIndexChanged.connect(lambda: self.satellite.set_curr_sat(self.dlg.SENSOR.currentText()))
+        self.dlg.SENSOR.currentIndexChanged.connect(
+            lambda: (QMessageBox.information(
+                None, u'Работа с GF/ZY',
+                u'Перед тем, как начать:\n1. Извлеки содержимое архивов (rar/zip) с данными GF/ZY:\n'
+                u'(можно извлечь всё в одну папку, можно извлечь каждый архив в отдельный каталог)\n'
+                u'2. Выбери в качестве входных данных директорию, которая содержит все извлечённые данные\n'
+                u'(программа обработает все данные за раз)\n'
+                u'3. Ура') if self.satellite.get_curr_sat() == "GF1-2, ZY3" else ''))
         self.dlg.INPUTbrowse.clicked.connect(
             lambda: self.select_input_file(sensor=self.satellite.get_curr_sat()))
         self.dlg.OUTPUTbrowse.clicked.connect(
@@ -233,7 +241,6 @@ class Helper:
 
     def upd_progress(self, value):
         self.dlg.progressBar.setValue(value)
-
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
