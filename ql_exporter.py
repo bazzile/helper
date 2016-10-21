@@ -50,19 +50,19 @@ def tab_template(sensor, file_name, map_coords1, map_coords2, map_coords3, map_c
 
 
 def get_valid_column_name(col_name_list, layer):
+    img_name = None
     for col_name in col_name_list:
-        img_name = None
+        # img_name = None
+        img_contour = layer.GetFeature(0)
         try:
-            img_contour = layer.GetFeature(0)
             img_name = img_contour.GetField(col_name)
-            print img_name
             if img_name is not None:
                 return col_name
-            else:
-                continue
-        finally:
-            if img_name is None:
-                raise Exception(u'Поля {} не содержат названия снимков. Проверье shp-файл'.format(str(col_name_list)))
+        except ValueError:
+            continue
+    if img_name is None:
+        # TODO почему ошибка не вылазит?
+        raise ValueError(u'Поля {} не содержат названия снимков. Проверье shp-файл'.format(str(col_name_list)))
 
 
 def bka_ql_exporter(source_file, dst_dirpath):
@@ -186,7 +186,7 @@ def th_ql_exporter(source_file, dst_dirpath):
         layer = dataSource.GetLayer(0)
         ql_list = layer.GetFeatureCount()
         counter = 0
-        col_name = get_valid_column_name(('ImgIdDgp', 'ImgIdDfp'), layer)
+        col_name = get_valid_column_name(('ImgIdDgp', 'ImgIdGfb'), layer)  # ImgIdDgp
         for img_contour in layer:
             ql_name = img_contour.GetField(col_name)
             geometry = img_contour.GetGeometryRef()
@@ -253,4 +253,5 @@ def zy_ql_exporter(source_dir, dst_dirpath):
                     yield percent_done, ql_list
                 del layer, dataSource
 
-th_ql_exporter(r"E:\Misc\TH\TH-1.zip", r"E:\Misc\TH")
+th_ql_exporter(r"C:\Users\lobanov\.qgis2\python\plugins\Helper\testData\TH\TH-1.zip",
+               r"C:\Users\lobanov\.qgis2\python\plugins\Helper\testData\TH")
