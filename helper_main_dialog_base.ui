@@ -184,7 +184,7 @@
              <item>
               <widget class="QRadioButton" name="radioButton_2">
                <property name="text">
-                <string>Архив с данными</string>
+                <string>Директория с данными</string>
                </property>
               </widget>
              </item>
