@@ -52,7 +52,6 @@ def tab_template(sensor, file_name, map_coords1, map_coords2, map_coords3, map_c
 def get_valid_column_name(col_name_list, layer):
     img_name = None
     for col_name in col_name_list:
-        # img_name = None
         img_contour = layer.GetFeature(0)
         try:
             img_name = img_contour.GetField(col_name)
@@ -161,58 +160,107 @@ def deimos_ql_exporter(source_file, dst_dirpath):
                         yield percent_done, len(ql_list)
 
 
+# NEW TEMP
 def th_ql_exporter(source_file, dst_dirpath):
-
-    def get_ql_path(qiucklook_name):
-        for ql_path in ql_path_list:
-            if qiucklook_name == ql_path.split('.')[-2][-46:-4]:
-                return ql_path
     with auxiliary_functions.make_temp_directory() as tmpdir:
         with zipfile.ZipFile(source_file, 'r') as zfile:
             zfile.extractall(tmpdir)
-
-        ql_path_list = []
-        src_shape = ''
         for dirpath, dirnames, filenames in os.walk(tmpdir):
             for filename in filenames:
-                if filename.endswith(('.jpg', '.JPG')):
-                    ql_path_list.append(os.path.join(tmpdir, filename))
                 if filename.endswith(('.shp', '.SHP')):
-                    src_shape = os.path.join(tmpdir, filename)
-                    continue
+                    shape_filepath = os.path.join(dirpath, filename)
+                    driver = ogr.GetDriverByName('ESRI Shapefile')
+                    dataSource = driver.Open(shape_filepath, 0)
+                    layer = dataSource.GetLayer(0)
+                    ql_list = layer.GetFeatureCount()
+                    col_name = get_valid_column_name(('ImgIdDgp', 'ImgIdGfb', 'browsefile'), layer)
+                    counter = 0
+                    for img_contour in layer:
+                        ql_name_w_type = img_contour.GetField(col_name)
+                        if not ql_name_w_type.endswith('.jpg'):
+                            ql_name_w_type = str(ql_name_w_type) + '.jpg'
+                        # случай TH
+                        if not os.path.isfile(os.path.join(tmpdir, ql_name_w_type)):
+                            ql_name_w_type = os.path.splitext(ql_name_w_type)[0] + '_Bro' + '.jpg'
+                        # TODO сделать также (функция от ql_name_w_type) в zy
+                        ql_name = os.path.splitext(ql_name_w_type)[0]
+                        geometry = img_contour.GetGeometryRef()
+                        ring = geometry.GetGeometryRef(0)
+                        coord_list = ['', '', '', '']
+                        list_counter = 0
+                        for point_id in range(ring.GetPointCount() - 1):
+                            lon, lat, z = ring.GetPoint(point_id)
+                            coord_list[list_counter] = str(','.join((str(lon), str(lat))))
+                            list_counter += 1
+                        ql_path = os.path.join(os.path.dirname(shape_filepath), ql_name_w_type)
+                        ql_dst_path = os.path.join(dst_dirpath, ql_name_w_type)
+                        shutil.copy(ql_path, ql_dst_path)
+                        ql_image_obj = Image.open(ql_path)
+                        ql_width, ql_height = ql_image_obj.size[0], ql_image_obj.size[1]
+                        del ql_image_obj
+                        text_content = tab_template(
+                            'ZY', ql_name, coord_list[0], coord_list[3], coord_list[2], coord_list[1],
+                            ql_height, ql_width)
+                        with open(os.path.join(dst_dirpath, ql_name + '.tab'), 'w') as f:
+                            f.write(text_content.strip())
+                        counter += 1
+                        percent_done = 100 * counter / ql_list
+                        # TODO разобраться, как (и стоит ли) показывать общий прогресс всех архивов разом (общий counter)
+                        yield percent_done, ql_list
+                    del layer, dataSource
 
-        driver = ogr.GetDriverByName('ESRI Shapefile')
-        dataSource = driver.Open(src_shape, 0)
-        layer = dataSource.GetLayer(0)
-        ql_list = layer.GetFeatureCount()
-        counter = 0
-        col_name = get_valid_column_name(('ImgIdDgp', 'ImgIdGfb'), layer)  # ImgIdDgp
-        for img_contour in layer:
-            ql_name = img_contour.GetField(col_name)
-            geometry = img_contour.GetGeometryRef()
-            ring = geometry.GetGeometryRef(0)
-            # numpoints = ring.GetPointCount()
-            coord_list = ['', '', '', '']
-            list_counter = 0
-            for point_id in range(ring.GetPointCount() - 1):
-                lon, lat, z = ring.GetPoint(point_id)
-                coord_list[list_counter] = str(','.join((str(lon), str(lat))))
-                list_counter += 1
-            ql_path = get_ql_path(ql_name)
-            ql_dst_path = os.path.join(dst_dirpath, ql_name + '_Bro' + '.jpg')
-            shutil.copy(ql_path, ql_dst_path)
-            ql_image_obj = Image.open(ql_path)
-            ql_width, ql_height = ql_image_obj.size[0], ql_image_obj.size[1]
-            del ql_image_obj
-            text_content = tab_template(
-                'TH', ql_name + '_Bro', coord_list[0], coord_list[3], coord_list[2], coord_list[1], ql_height, ql_width)
-            with open(os.path.join(dst_dirpath, ql_name + '_Bro' + '.tab'), 'w') as f:
-                f.write(text_content.strip())
-            counter += 1
-            percent_done = 100 * counter / ql_list
-            # этот callback позволяет отслеживать прогресс функции в helper_main
-            # yield percent_done, ql_list
-        del layer, dataSource
+# def th_ql_exporter(source_file, dst_dirpath):
+#
+#     def get_ql_path(qiucklook_name):
+#         for ql_path in ql_path_list:
+#             if qiucklook_name == ql_path.split('.')[-2][-46:-4]:
+#                 return ql_path
+#     with auxiliary_functions.make_temp_directory() as tmpdir:
+#         with zipfile.ZipFile(source_file, 'r') as zfile:
+#             zfile.extractall(tmpdir)
+#
+#         ql_path_list = []
+#         src_shape = ''
+#         for dirpath, dirnames, filenames in os.walk(tmpdir):
+#             for filename in filenames:
+#                 if filename.endswith(('.jpg', '.JPG')):
+#                     ql_path_list.append(os.path.join(tmpdir, filename))
+#                 if filename.endswith(('.shp', '.SHP')):
+#                     src_shape = os.path.join(tmpdir, filename)
+#                     continue
+#
+#         driver = ogr.GetDriverByName('ESRI Shapefile')
+#         dataSource = driver.Open(src_shape, 0)
+#         layer = dataSource.GetLayer(0)
+#         ql_list = layer.GetFeatureCount()
+#         counter = 0
+#         col_name = get_valid_column_name(('ImgIdDgp', 'ImgIdGfb'), layer)  # ImgIdDgp
+#         for img_contour in layer:
+#             ql_name = img_contour.GetField(col_name)
+#             geometry = img_contour.GetGeometryRef()
+#             ring = geometry.GetGeometryRef(0)
+#             # numpoints = ring.GetPointCount()
+#             coord_list = ['', '', '', '']
+#             list_counter = 0
+#             for point_id in range(ring.GetPointCount() - 1):
+#                 lon, lat, z = ring.GetPoint(point_id)
+#                 coord_list[list_counter] = str(','.join((str(lon), str(lat))))
+#                 list_counter += 1
+#             ql_path = get_ql_path(ql_name)
+#             ql_dst_path = os.path.join(dst_dirpath, ql_name + '_Bro' + '.jpg')
+#             shutil.copy(ql_path, ql_dst_path)
+#             ql_image_obj = Image.open(ql_path)
+#             ql_width, ql_height = ql_image_obj.size[0], ql_image_obj.size[1]
+#             del ql_image_obj
+#             text_content = tab_template(
+#                 'TH', ql_name + '_Bro', coord_list[0], coord_list[3], coord_list[2], coord_list[1], ql_height, ql_width)
+#             with open(os.path.join(dst_dirpath, ql_name + '_Bro' + '.tab'), 'w') as f:
+#                 f.write(text_content.strip())
+#             counter += 1
+#             percent_done = 100 * counter / ql_list
+#             # этот callback позволяет отслеживать прогресс функции в helper_main
+#             yield percent_done, ql_list
+#         del layer, dataSource
 
 
 def zy_ql_exporter(source_dir, dst_dirpath):
@@ -253,5 +301,5 @@ def zy_ql_exporter(source_dir, dst_dirpath):
                     yield percent_done, ql_list
                 del layer, dataSource
 
-th_ql_exporter(r"C:\Users\lobanov\.qgis2\python\plugins\Helper\testData\TH\TH-1.zip",
-               r"C:\Users\lobanov\.qgis2\python\plugins\Helper\testData\TH")
+# th_ql_exporter(r"C:\Users\lobanov\.qgis2\python\plugins\Helper\testData\TH\TH-1.zip",
+#                r"C:\Users\lobanov\.qgis2\python\plugins\Helper\testData\TH\TH-1")
