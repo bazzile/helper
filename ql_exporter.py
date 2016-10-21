@@ -65,6 +65,7 @@ def get_valid_column_name(col_name_list, layer):
 
 
 def bka_ql_exporter(source_file, dst_dirpath):
+    total_ql_list, percent_done, process_done_flag = 0, 0, False
     # парсим kml
     if source_file.endswith(('.kml', '.KML')):
         tree = ET.parse(source_file)
@@ -107,10 +108,13 @@ def bka_ql_exporter(source_file, dst_dirpath):
         counter += 1
         percent_done = 100 * counter / len(ql_kml_list)
         # этот callback позволяет отслеживать прогресс функции в helper_main
-        yield percent_done, len(ql_kml_list)
+        yield percent_done, len(ql_kml_list), process_done_flag
+    process_done_flag = True
+    yield percent_done, len(ql_kml_list), process_done_flag
 
 
 def deimos_ql_exporter(source_file, dst_dirpath):
+    total_ql_list, percent_done, process_done_flag = 0, 0, False
     with auxiliary_functions.make_temp_directory() as tmpdir:
         with zipfile.ZipFile(source_file, 'r') as zfile:
             zfile.extractall(tmpdir)
@@ -157,11 +161,15 @@ def deimos_ql_exporter(source_file, dst_dirpath):
                         counter += 1
                         percent_done = 100 * counter / len(ql_list)
                         # этот callback позволяет отслеживать прогресс функции в helper_main
-                        yield percent_done, len(ql_list)
+                        yield percent_done, len(ql_list), process_done_flag
+                    total_ql_list += len(ql_list)
+    process_done_flag = True
+    yield percent_done, total_ql_list, process_done_flag
 
 
-# NEW TEMP
+# NEW TH
 def th_ql_exporter(source_file, dst_dirpath):
+    total_ql_list, percent_done, process_done_flag = 0, 0, False
     if source_file.endswith(('.zip', '.ZIP')):
         with auxiliary_functions.make_temp_directory() as tmpdir:
             with zipfile.ZipFile(source_file, 'r') as zfile:
@@ -176,6 +184,7 @@ def th_ql_exporter(source_file, dst_dirpath):
                         dataSource = driver.Open(shape_filepath, 0)
                         layer = dataSource.GetLayer(0)
                         ql_list = layer.GetFeatureCount()
+                        total_ql_list += ql_list
                         col_name = get_valid_column_name(('ImgIdDgp', 'ImgIdGfb', 'browsefile'), layer)
                         counter = 0
                         for img_contour in layer:
@@ -209,8 +218,10 @@ def th_ql_exporter(source_file, dst_dirpath):
                             counter += 1
                             percent_done = 100 * counter / ql_list
                             # TODO разобраться, как (и стоит ли) показывать общий прогресс всех архивов разом (общий counter)
-                            yield percent_done, ql_list
+                            yield percent_done, ql_list, process_done_flag
                         del layer, dataSource
+    process_done_flag = True
+    yield percent_done, total_ql_list, process_done_flag
 
 # def th_ql_exporter(source_file, dst_dirpath):
 #
@@ -266,6 +277,7 @@ def th_ql_exporter(source_file, dst_dirpath):
 #         del layer, dataSource
 
 
+# TODO объединить zy c th или дописать zy третий флаг (+сумма totatl), проверить работу флагов в deimos
 def zy_ql_exporter(source_dir, dst_dirpath):
     for dirpath, dirnames, filenames in os.walk(source_dir):
         for filename in filenames:

@@ -334,9 +334,9 @@ class Helper:
         """Функция для отслеживания прогресса обработки в ql_exporter с помощью callbacks"""
         try:
             for response in callback:
-                percent, file_number = response[0], response[1]
+                percent, file_number, process_done_flag = response[0], response[1], response[2]
                 self.dlg.progressBar.setValue(percent)
-                if percent == 100:
+                if process_done_flag is True:
                     QMessageBox.information(None, 'Result',
                                             u'Готово!\nСоздано квиклуков: ' + str(file_number))
 
