@@ -182,16 +182,25 @@
               </spacer>
              </item>
              <item>
-              <widget class="QRadioButton" name="radioButton_2">
+              <widget class="QRadioButton" name="SINGLE_radioButton">
+               <property name="enabled">
+                <bool>true</bool>
+               </property>
                <property name="text">
-                <string>Директория с данными</string>
+                <string>Отдельный файл</string>
+               </property>
+               <property name="checkable">
+                <bool>true</bool>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QRadioButton" name="radioButton">
+              <widget class="QRadioButton" name="BATCH_radioButton">
                <property name="text">
-                <string>Отдельный файл</string>
+                <string>Директория с файлами</string>
                </property>
               </widget>
              </item>

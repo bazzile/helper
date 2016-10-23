@@ -59,8 +59,8 @@ class Satellite:
     def __init__(self):
         self.satellite = None
         """"Задаём список доступных спутников"""
-        self.sat_list = ["DEIMOS2", "BKA", "TH", "GF1-2, ZY3"]
-        # "TRIPLESAT", "KAZEOSAT1", "KAZEOSAT2", "ALOS",
+        self.sat_list = ["DEIMOS2", "BKA", "TH", "GF1-2, ZY3", "TRIPLESAT"]
+        # "KAZEOSAT1", "KAZEOSAT2", "ALOS",
         #                  "PRISM",
         #                  "DG/WV-QB-IK-GE", "SPOT5", "SPOT67", "KOMPSAT2", "KOMPSAT3", ]
 
@@ -228,10 +228,9 @@ class Helper:
         self.dlg.SENSOR.currentIndexChanged.connect(
             lambda: (QMessageBox.information(
                 None, u'Работа с GF/ZY',
-                u'Перед тем, как начать:\n1. Извлеки содержимое архивов (rar/zip) с данными GF/ZY:\n'
+                u'Программа НЕ работает с RAR-архивами, поэтому:\n1. Извлеки содержимое RAR-архивов с данными GF/ZY:\n'
                 u'(можно извлечь всё в одну папку, можно извлечь каждый архив в отдельный каталог)\n'
-                u'2. Выбери в качестве входных данных директорию, которая содержит все извлечённые данные\n'
-                u'(программа обработает все данные за раз)\n'
+                u'2. Запакуй ВСЕ извлечённые данные в ZIP-архив\n'
                 u'3. Ура') if self.satellite.get_curr_sat() == "GF1-2, ZY3" else ''))
         self.dlg.INPUTbrowse.clicked.connect(
             lambda: self.select_input_file(sensor=self.satellite.get_curr_sat()))
@@ -310,6 +309,8 @@ class Helper:
                 file_format = u' Deimos-2 (*.zip *.ZIP)'
             elif sensor == 'TH':
                 file_format = u' TH (*.zip *.ZIP)'
+            elif sensor == 'TRIPLESAT':
+                file_format = u' TRIPLESAT (*.zip *.ZIP)'
             else:
                 file_format = u'??? (Сенсор не задан)'
             self.curr_filepath = QFileDialog.getOpenFileName(
@@ -352,8 +353,9 @@ class Helper:
             self.observe_progress(ql_exporter.bka_ql_exporter(source_file, dst_path))
         elif sensor == 'DEIMOS2':
             self.observe_progress(ql_exporter.deimos_ql_exporter(source_file, dst_path))
-        elif sensor == 'TH':
-            self.observe_progress(ql_exporter.th_ql_exporter(source_file, dst_path))
+        # TODO объединить GF ZY c TH, TRIPLESAT
+        elif sensor == 'TH' or sensor == 'TRIPLESAT':
+            self.observe_progress(ql_exporter.th_ql_exporter(source_file, dst_path, sensor))
         elif sensor == 'GF1-2, ZY3':
             self.observe_progress(ql_exporter.zy_ql_exporter(source_file, dst_path))
         # TODO вынести аргумент dst_path в единое место?

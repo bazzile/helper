@@ -175,7 +175,7 @@ def th_ql_exporter(source_file, dst_dirpath, sensor):
             with zipfile.ZipFile(source_file, 'r') as zfile:
                 zfile.extractall(tmpdir)
     # else:
-    #     do it(make all further proc a function) for each zipfile in directory
+    #     if os.path.isdir (source_file) do it(make all further proc a function) for each zipfile in directory
             for dirpath, dirnames, filenames in os.walk(tmpdir):
                 for filename in filenames:
                     if filename.endswith(('.shp', '.SHP')):
@@ -189,13 +189,14 @@ def th_ql_exporter(source_file, dst_dirpath, sensor):
                             col_name = get_valid_column_name(('ImgIdDgp', 'ImgIdGfb'), layer)
                         else:
                             # вариант GF/ZY/TRIPLESAT
-                            col_name = get_valid_column_name(['browsefile'], layer)
+                            col_name = get_valid_column_name(['browsefile', 'browserimg'], layer)
                         counter = 0
                         for img_contour in layer:
-                            ql_name_w_type = img_contour.GetField(col_name)
+                            # ql_name_w_type = img_contour.GetField(col_name)
                             if sensor == 'TH':
-                                ql_name_w_type = str(ql_name_w_type) + '_Bro' + '.jpg'
-                                # ql_name_w_type = os.path.splitext(ql_name_w_type)[0] + '_Bro' + '.jpg'
+                                ql_name_w_type = str(img_contour.GetField(col_name)) + '_Bro' + '.jpg'
+                            elif sensor == 'TRIPLESAT':
+                                ql_name_w_type = os.path.basename(img_contour.GetField(col_name))
                             # TODO сделать также (функция от ql_name_w_type) в zy
                             ql_name = os.path.splitext(ql_name_w_type)[0]
                             geometry = img_contour.GetGeometryRef()
@@ -206,7 +207,10 @@ def th_ql_exporter(source_file, dst_dirpath, sensor):
                                 lon, lat, z = ring.GetPoint(point_id)
                                 coord_list[list_counter] = str(','.join((str(lon), str(lat))))
                                 list_counter += 1
-                            ql_path = os.path.join(os.path.dirname(shape_filepath), ql_name_w_type)
+                            if sensor == 'TRIPLESAT':
+                                ql_path = os.path.join(os.path.dirname(shape_filepath), 'images', ql_name_w_type)
+                            else:
+                                ql_path = os.path.join(os.path.dirname(shape_filepath), ql_name_w_type)
                             ql_dst_path = os.path.join(dst_dirpath, ql_name_w_type)
                             shutil.copy(ql_path, ql_dst_path)
                             ql_image_obj = Image.open(ql_path)
@@ -219,7 +223,6 @@ def th_ql_exporter(source_file, dst_dirpath, sensor):
                                 f.write(text_content.strip())
                             counter += 1
                             percent_done = 100 * counter / ql_list
-                            # TODO разобраться, как (и стоит ли) показывать общий прогресс всех архивов разом (общий counter)
                             yield percent_done, ql_list, process_done_flag
                         del layer, dataSource
     process_done_flag = True
