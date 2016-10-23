@@ -216,7 +216,7 @@ def chinease_ql_exporter(source_file, dst_dirpath, sensor):
                             ql_width, ql_height = ql_image_obj.size[0], ql_image_obj.size[1]
                             del ql_image_obj
                             text_content = tab_template(
-                                'ZY', ql_name, coord_list[0], coord_list[3], coord_list[2], coord_list[1],
+                                'China', ql_name, coord_list[0], coord_list[3], coord_list[2], coord_list[1],
                                 ql_height, ql_width)
                             with open(os.path.join(dst_dirpath, ql_name + '.tab'), 'w') as f:
                                 f.write(text_content.strip())
