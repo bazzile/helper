@@ -293,7 +293,7 @@ class Helper:
     #  TODO разобраться с окончаниями elif - в конце можно убрать дубликаты кода
     def select_input_file(self, sensor):
         # на вход идёт не файл, а директория, поэтому выводим в отдельный блок
-        if sensor == 'GF1-2, ZY3':
+        if sensor == 'GF1-2, ZY3zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz':
             self.curr_filepath = QFileDialog.getExistingDirectory(self.dlg, u"Укажите файл контура ", lastUsedDir())
             if self.curr_filepath != '':
                 self.dlg.INPUT.setText(self.curr_filepath)
@@ -309,6 +309,8 @@ class Helper:
                 file_format = u' Deimos-2 (*.zip *.ZIP)'
             elif sensor == 'TH':
                 file_format = u' TH (*.zip *.ZIP)'
+            elif sensor == 'GF1-2, ZY3':
+                file_format = u'GF1-2, ZY3 (*.zip *.ZIP)'
             elif sensor == 'TRIPLESAT':
                 file_format = u' TRIPLESAT (*.zip *.ZIP)'
             else:
@@ -353,11 +355,8 @@ class Helper:
             self.observe_progress(ql_exporter.bka_ql_exporter(source_file, dst_path))
         elif sensor == 'DEIMOS2':
             self.observe_progress(ql_exporter.deimos_ql_exporter(source_file, dst_path))
-        # TODO объединить GF ZY c TH, TRIPLESAT
-        elif sensor == 'TH' or sensor == 'TRIPLESAT':
-            self.observe_progress(ql_exporter.th_ql_exporter(source_file, dst_path, sensor))
-        elif sensor == 'GF1-2, ZY3':
-            self.observe_progress(ql_exporter.zy_ql_exporter(source_file, dst_path))
+        elif sensor == 'TH' or sensor == 'TRIPLESAT' or sensor == 'GF1-2, ZY3':
+            self.observe_progress(ql_exporter.chinease_ql_exporter(source_file, dst_path, sensor))
         # TODO вынести аргумент dst_path в единое место?
         if self.dlg.browse_on_complete.isChecked():
             os.startfile(dst_path)
