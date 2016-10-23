@@ -168,7 +168,7 @@ def deimos_ql_exporter(source_file, dst_dirpath):
 
 
 # NEW TH
-def th_ql_exporter(source_file, dst_dirpath):
+def th_ql_exporter(source_file, dst_dirpath, sensor):
     total_ql_list, percent_done, process_done_flag = 0, 0, False
     if source_file.endswith(('.zip', '.ZIP')):
         with auxiliary_functions.make_temp_directory() as tmpdir:
@@ -185,15 +185,17 @@ def th_ql_exporter(source_file, dst_dirpath):
                         layer = dataSource.GetLayer(0)
                         ql_list = layer.GetFeatureCount()
                         total_ql_list += ql_list
-                        col_name = get_valid_column_name(('ImgIdDgp', 'ImgIdGfb', 'browsefile'), layer)
+                        if sensor == 'TH':
+                            col_name = get_valid_column_name(('ImgIdDgp', 'ImgIdGfb'), layer)
+                        else:
+                            # вариант GF/ZY/TRIPLESAT
+                            col_name = get_valid_column_name(['browsefile'], layer)
                         counter = 0
                         for img_contour in layer:
                             ql_name_w_type = img_contour.GetField(col_name)
-                            if not ql_name_w_type.endswith('.jpg'):
-                                ql_name_w_type = str(ql_name_w_type) + '.jpg'
-                            # случай TH
-                            if not os.path.isfile(os.path.join(tmpdir, ql_name_w_type)):
-                                ql_name_w_type = os.path.splitext(ql_name_w_type)[0] + '_Bro' + '.jpg'
+                            if sensor == 'TH':
+                                ql_name_w_type = str(ql_name_w_type) + '_Bro' + '.jpg'
+                                # ql_name_w_type = os.path.splitext(ql_name_w_type)[0] + '_Bro' + '.jpg'
                             # TODO сделать также (функция от ql_name_w_type) в zy
                             ql_name = os.path.splitext(ql_name_w_type)[0]
                             geometry = img_contour.GetGeometryRef()
