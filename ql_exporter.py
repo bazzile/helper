@@ -196,7 +196,6 @@ def chinease_ql_exporter(source_file, dst_dirpath, sensor):
                                 ql_name_w_type = str(img_contour.GetField(col_name)) + '_Bro' + '.jpg'
                             elif sensor == 'TRIPLESAT' or sensor == 'GF1-2, ZY3':
                                 ql_name_w_type = os.path.basename(img_contour.GetField(col_name))
-                            # TODO сделать также (функция от ql_name_w_type) в zy
                             ql_name = os.path.splitext(ql_name_w_type)[0]
                             geometry = img_contour.GetGeometryRef()
                             ring = geometry.GetGeometryRef(0)
