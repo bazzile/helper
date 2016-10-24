@@ -252,7 +252,8 @@ class Helper:
         chosen_layer = unicode(self.dlg.LAYERcomboBox.currentText())
         self.dlg.ellipsoidal_pushButton.clicked.connect(
             lambda:
-            ellipsoidal_area(chosen_layer, 'WGS84', 'area_a', 0, None, self.dlg.ellipsoidal_progressBar))
+            ellipsoidal_area(chosen_layer, 'WGS84', 'area_a', 0, r"E:\!WORK\M1604Kura\kura2.shp", self.dlg.ellipsoidal_progressBar))
+
 
     def upd_progress(self, value):
         self.dlg.progressBar.setValue(value)
