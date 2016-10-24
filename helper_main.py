@@ -34,6 +34,12 @@ import os.path
 import ql_exporter
 import auxiliary_functions
 
+# # импорты ellipsoiodal_area
+# import processing
+# from processing.core.GeoAlgorithmExecutionException import GeoAlgorithmExecutionException
+# from processing.tools.vector import VectorWriter
+from my_ellipsoidal_area import ellipsoidal_area
+
 
 # задание стандартной директории
 def lastUsedDir(type='in'):
@@ -223,6 +229,9 @@ class Helper:
         self.populateComboBox(self.dlg.SENSOR, self.satellite.get_sat_list(), u'Какой спутник ищем?', True)
         self.dlg.INPUT.setText(u'Где взять исходные файлы?')
 
+        # ellipsoidal_area
+        self.ellipsoidal_area_settings()
+
     def runGui(self):
         self.dlg.SENSOR.currentIndexChanged.connect(lambda: self.satellite.set_curr_sat(self.dlg.SENSOR.currentText()))
         self.dlg.SENSOR.currentIndexChanged.connect(
@@ -237,6 +246,13 @@ class Helper:
         self.dlg.OUTPUTbrowse.clicked.connect(
             lambda: self.select_output_dir())
         self.dlg.START.clicked.connect(lambda: self.start_processing())
+
+        # ellipsoidal_area
+        chosen_unit = unicode(self.dlg.UNITScomboBox.currentText())
+        chosen_layer = unicode(self.dlg.LAYERcomboBox.currentText())
+        self.dlg.ellipsoidal_pushButton.clicked.connect(
+            lambda:
+            ellipsoidal_area(chosen_layer, 'WGS84', 'area_a', 0, None, self.dlg.ellipsoidal_progressBar))
 
     def upd_progress(self, value):
         self.dlg.progressBar.setValue(value)
@@ -361,3 +377,12 @@ class Helper:
         if self.dlg.browse_on_complete.isChecked():
             os.startfile(dst_path)
         self.dlg.progressBar.setValue(0)
+
+    def ellipsoidal_area_settings(self):
+        # populate local module GUI
+        units = ['sq_km', 'sq_m', 'sq_miles', 'sq_ft', 'sq_nm', 'sq_degrees']
+        layers = [layer.name() for layer in QgsMapLayerRegistry.instance().mapLayers().values()]
+        self.populateComboBox(self.dlg.LAYERcomboBox, layers, layers[0], True)
+        self.populateComboBox(self.dlg.UNITScomboBox, units, u'Укажите единицы', False)
+
+
