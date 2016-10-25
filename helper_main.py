@@ -41,46 +41,6 @@ import auxiliary_functions
 from my_ellipsoidal_area import ellipsoidal_area
 
 
-# задание стандартной директории
-def lastUsedDir(type='in'):
-    settings = QSettings("Innoter Helper", "helper")
-    # можно 'C:\\' вместо ''
-    if type == 'in':
-        return settings.value("lastUsedInDir", str(""))
-    elif type == 'out':
-        return settings.value("lastUsedOutDir", str(""))
-
-
-# обновление стандартной директории на последнюю использовавшуюся
-def setLastUsedDir(lastDir, type='in'):
-    path = QFileInfo(lastDir).absolutePath()
-    settings = QSettings("Innoter Helper", "helper")
-    if type == 'in':
-        settings.setValue("lastUsedInDir", str(path))
-    elif type == 'out':
-        settings.setValue("lastUsedOutDir", str(path))
-
-
-class Satellite:
-    def __init__(self):
-        self.satellite = None
-        """"Задаём список доступных спутников"""
-        self.sat_list = ["DEIMOS2", "BKA", "TH", "GF1-2, ZY3", "TRIPLESAT"]
-        # "KAZEOSAT1", "KAZEOSAT2", "ALOS",
-        #                  "PRISM",
-        #                  "DG/WV-QB-IK-GE", "SPOT5", "SPOT67", "KOMPSAT2", "KOMPSAT3", ]
-
-    def get_sat_list(self):
-        return self.sat_list
-
-    def set_curr_sat(self, new_satellite_value):
-        self.satellite = new_satellite_value
-        return self.satellite
-
-    def get_curr_sat(self):
-        return self.satellite
-
-
 class Helper:
     """QGIS Plugin Implementation."""
 
@@ -124,7 +84,7 @@ class Helper:
         self.curr_filepath = None
         self.last_used_path = None
         self.out_dir = None
-        self.satellite = Satellite()
+        self.satellite = auxiliary_functions.Satellite()
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -248,11 +208,12 @@ class Helper:
         self.dlg.START.clicked.connect(lambda: self.start_processing())
 
         # ellipsoidal_area
-        chosen_unit = unicode(self.dlg.UNITScomboBox.currentText())
-        chosen_layer = unicode(self.dlg.LAYERcomboBox.currentText())
-        self.dlg.ellipsoidal_pushButton.clicked.connect(
-            lambda:
-            ellipsoidal_area(chosen_layer, 'WGS84', 'area_a', 0, r"E:\!WORK\M1604Kura\kura2.shp", self.dlg.ellipsoidal_progressBar))
+
+        # chosen_unit = unicode(self.dlg.UNITScomboBox.currentText())
+        # chosen_layer = unicode(self.dlg.LAYERcomboBox.currentText())
+        # self.dlg.ellipsoidal_pushButton.clicked.connect(
+        #     lambda:
+        #     ellipsoidal_area(chosen_layer, 'WGS84', 'area_a', 0, r"E:\!WORK\M1604Kura\kura2.shp", self.dlg.ellipsoidal_progressBar))
 
 
     def upd_progress(self, value):
@@ -311,10 +272,11 @@ class Helper:
     def select_input_file(self, sensor):
         # на вход идёт не файл, а директория, поэтому выводим в отдельный блок
         if sensor == 'GF1-2, ZY3zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz':
-            self.curr_filepath = QFileDialog.getExistingDirectory(self.dlg, u"Укажите файл контура ", lastUsedDir())
+            self.curr_filepath = QFileDialog.getExistingDirectory(
+                self.dlg, u"Укажите файл контура ", auxiliary_functions.lastUsedDir())
             if self.curr_filepath != '':
                 self.dlg.INPUT.setText(self.curr_filepath)
-                setLastUsedDir(self.curr_filepath)
+                auxiliary_functions.setLastUsedDir(self.curr_filepath)
                 self.out_dir = self.curr_filepath
                 self.dlg.OUTPUT.setText(self.out_dir)
             else:
@@ -333,10 +295,10 @@ class Helper:
             else:
                 file_format = u'??? (Сенсор не задан)'
             self.curr_filepath = QFileDialog.getOpenFileName(
-                    self.dlg, u"Укажите файл контура ", lastUsedDir(), file_format)
+                    self.dlg, u"Укажите файл контура ", auxiliary_functions.lastUsedDir(), file_format)
             if self.curr_filepath != '':
                 self.dlg.INPUT.setText(self.curr_filepath)
-                setLastUsedDir(os.path.dirname(self.curr_filepath))
+                auxiliary_functions.setLastUsedDir(os.path.dirname(self.curr_filepath))
                 self.out_dir = os.path.dirname(self.curr_filepath)
                 self.dlg.OUTPUT.setText(self.out_dir)
             else:
@@ -345,10 +307,10 @@ class Helper:
     # TODO сделать select_..._ функцией по типу populate_combo
     def select_output_dir(self):
         self.out_dir = QFileDialog.getExistingDirectory(
-            self.dlg, u"Укажите файл контура ", lastUsedDir(type='out'))
+            self.dlg, u"Укажите файл контура ", auxiliary_functions.lastUsedDir(type='out'))
         if self.out_dir != '':
             self.dlg.OUTPUT.setText(self.out_dir)
-            setLastUsedDir(self.out_dir, type='out')
+            auxiliary_functions.setLastUsedDir(self.out_dir, type='out')
 
     def observe_progress(self, callback=None):
         """Функция для отслеживания прогресса обработки в ql_exporter с помощью callbacks"""

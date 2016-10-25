@@ -5,6 +5,7 @@ import os
 import shutil
 import contextlib
 import tempfile
+from PyQt4.QtCore import *
 
 
 def make_out_dir(dst_dirpath):
@@ -24,3 +25,43 @@ def make_temp_directory():
         yield temp_dir
     finally:
         shutil.rmtree(temp_dir)
+
+
+# задание стандартной директории
+def lastUsedDir(type='in'):
+    settings = QSettings("Innoter Helper", "helper")
+    # можно 'C:\\' вместо ''
+    if type == 'in':
+        return settings.value("lastUsedInDir", str(""))
+    elif type == 'out':
+        return settings.value("lastUsedOutDir", str(""))
+
+
+# обновление стандартной директории на последнюю использовавшуюся
+def setLastUsedDir(lastDir, type='in'):
+    path = QFileInfo(lastDir).absolutePath()
+    settings = QSettings("Innoter Helper", "helper")
+    if type == 'in':
+        settings.setValue("lastUsedInDir", str(path))
+    elif type == 'out':
+        settings.setValue("lastUsedOutDir", str(path))
+
+
+class Satellite:
+    def __init__(self):
+        self.satellite = None
+        """"Задаём список доступных спутников"""
+        self.sat_list = ["DEIMOS2", "BKA", "TH", "GF1-2, ZY3", "TRIPLESAT"]
+        # "KAZEOSAT1", "KAZEOSAT2", "ALOS",
+        #                  "PRISM",
+        #                  "DG/WV-QB-IK-GE", "SPOT5", "SPOT67", "KOMPSAT2", "KOMPSAT3", ]
+
+    def get_sat_list(self):
+        return self.sat_list
+
+    def set_curr_sat(self, new_satellite_value):
+        self.satellite = new_satellite_value
+        return self.satellite
+
+    def get_curr_sat(self):
+        return self.satellite
