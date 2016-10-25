@@ -6,6 +6,7 @@ import shutil
 import contextlib
 import tempfile
 from PyQt4.QtCore import *
+from qgis.core import *
 
 
 def make_out_dir(dst_dirpath):
@@ -65,3 +66,15 @@ class Satellite:
 
     def get_curr_sat(self):
         return self.satellite
+
+
+class Layers:
+    def __init__(self):
+        self.layer_objs = [layer for layer in QgsMapLayerRegistry.instance().mapLayers()]
+    #     self.layer_names = [layer_obj.values().name() for layer_obj in self.layer_objs]
+    #
+    # # def get_active_lyr(self):
+    # #     # TODO как получить активный слой?
+    #
+    # def set_layer_by_lyr_name(self, name):
+    #     if name in self.layer_names:
