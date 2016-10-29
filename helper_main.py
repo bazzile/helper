@@ -34,10 +34,6 @@ import os.path
 import ql_exporter
 import auxiliary_functions
 
-# # импорты ellipsoiodal_area
-# import processing
-# from processing.core.GeoAlgorithmExecutionException import GeoAlgorithmExecutionException
-# from processing.tools.vector import VectorWriter
 from my_ellipsoidal_area import ellipsoidal_area
 
 
@@ -209,13 +205,11 @@ class Helper:
         self.dlg.START.clicked.connect(lambda: self.start_processing())
 
         # ellipsoidal_area
-
-        # chosen_unit = unicode(self.dlg.UNITScomboBox.currentText())
-        # chosen_layer = unicode(self.dlg.LAYERcomboBox.currentText())
-        # self.dlg.ellipsoidal_pushButton.clicked.connect(
-        #     lambda:
-        #     ellipsoidal_area(chosen_layer, 'WGS84', 'area_a', 0, r"E:\!WORK\M1604Kura\kura2.shp", self.dlg.ellipsoidal_progressBar))
-
+        self.dlg.ellipsoidal_pushButton.clicked.connect(
+            lambda:
+            ellipsoidal_area(unicode(self.dlg.LAYERcomboBox.currentText()), 'WGS84', 'area_a',
+                             unicode(self.dlg.UNITScomboBox.currentText()), r"D:\out.shp",
+                             self.dlg.ellipsoidal_progressBar))
 
     def upd_progress(self, value):
         self.dlg.progressBar.setValue(value)
@@ -344,9 +338,7 @@ class Helper:
 
     def ellipsoidal_area_settings(self):
         # populate local module GUI
-        units = ['sq_km', 'sq_m', 'sq_miles', 'sq_ft', 'sq_nm', 'sq_degrees']
+        units = [u'км2', u'м2']  # 'sq_miles', 'sq_ft', 'sq_nm', 'sq_degrees'
         layers = self.layer_handler.get_layer_name_list()
-        self.populateComboBox(self.dlg.LAYERcomboBox, layers, u'Выберите слой', True)
-        self.populateComboBox(self.dlg.UNITScomboBox, units, u'Укажите единицы', False)
-
-
+        self.populateComboBox(self.dlg.LAYERcomboBox, layers, '', True)
+        self.populateComboBox(self.dlg.UNITScomboBox, units, '', False)

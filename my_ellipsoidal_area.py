@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 ##Ellipsoidal Area=name
 ##Utils=group
 ##input=vector polygon
@@ -13,11 +15,11 @@ from PyQt4.QtCore import *
 from qgis.core import *
 
 
-def ellipsoidal_area(input_lyr, ellipsoid, new_field, units, output, progress):
-    measure_units_dict = {0: 'sq_km', 1: 'sq_m', 2: 'sq_miles', 3: 'sq_ft',
-                          4: 'sq_nm', 5: 'sq_degrees'}
-    units_selection = measure_units_dict[units]
-    input_layer = QgsMapLayerRegistry.instance().mapLayersByName(input_lyr)[0]
+def ellipsoidal_area(input_lyr_name, ellipsoid, new_field, units, output, progress):
+    # measure_units_dict = {0: 'sq_km', 1: 'sq_m', 2: 'sq_miles', 3: 'sq_ft',
+    #                       4: 'sq_nm', 5: 'sq_degrees'}
+    # units_selection = measure_units_dict[units]
+    input_layer = QgsMapLayerRegistry.instance().mapLayersByName(input_lyr_name)[0]
     if not input_layer.crs().geographicFlag():
         raise GeoAlgorithmExecutionException(
             'Your layer has a Projected CRS. '
@@ -59,21 +61,22 @@ def ellipsoidal_area(input_lyr, ellipsoid, new_field, units, output, progress):
             polygon = geom.asPolygon()
             polygon_area = area.measurePolygon(polygon[0])
 
-        # calculated area is in sq. metres
-        if units_selection == 'sq_km':
+        # calculated area is in sq. metres (see the "else" case)
+        # TODO убрать лишние единицы
+        if units == u'км2':
             final_area = polygon_area / 1e6
-        elif units_selection == 'sq_ft':
-            final_area = area.convertMeasurement(
-                polygon_area, QGis.Meters, QGis.Feet, True)[0]
-        elif units_selection == 'sq_miles':
-            final_area = area.convertMeasurement(
-                polygon_area, QGis.Meters, QGis.Feet, True)[0] / (5280.0 * 5280.0)
-        elif units_selection == 'sq_nm':
-            final_area = area.convertMeasurement(
-                polygon_area, QGis.Meters, QGis.NauticalMiles, True)[0]
-        elif units_selection == 'sq_degrees':
-            final_area = area.convertMeasurement(
-                polygon_area, QGis.Meters, QGis.Degrees, True)[0]
+        # elif units == 'sq_ft':
+        #     final_area = area.convertMeasurement(
+        #         polygon_area, QGis.Meters, QGis.Feet, True)[0]
+        # elif units == 'sq_miles':
+        #     final_area = area.convertMeasurement(
+        #         polygon_area, QGis.Meters, QGis.Feet, True)[0] / (5280.0 * 5280.0)
+        # elif units == 'sq_nm':
+        #     final_area = area.convertMeasurement(
+        #         polygon_area, QGis.Meters, QGis.NauticalMiles, True)[0]
+        # elif units == 'sq_degrees':
+        #     final_area = area.convertMeasurement(
+        #         polygon_area, QGis.Meters, QGis.Degrees, True)[0]
         else:
             final_area = polygon_area
 
