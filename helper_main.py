@@ -84,7 +84,8 @@ class Helper:
         self.curr_filepath = None
         self.last_used_path = None
         self.out_dir = None
-        self.satellite = auxiliary_functions.Satellite()
+        self.satellite_handler = auxiliary_functions.Satellite()
+        self.layer_handler = auxiliary_functions.Layers()
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -186,23 +187,23 @@ class Helper:
 
     def populateGui(self):
         """Make the GUI live."""
-        self.populateComboBox(self.dlg.SENSOR, self.satellite.get_sat_list(), u'Какой спутник ищем?', True)
+        self.populateComboBox(self.dlg.SENSOR, self.satellite_handler.get_sat_list(), u'Какой спутник ищем?', True)
         self.dlg.INPUT.setText(u'Где взять исходные файлы?')
 
         # ellipsoidal_area
         self.ellipsoidal_area_settings()
 
     def runGui(self):
-        self.dlg.SENSOR.currentIndexChanged.connect(lambda: self.satellite.set_curr_sat(self.dlg.SENSOR.currentText()))
+        self.dlg.SENSOR.currentIndexChanged.connect(lambda: self.satellite_handler.set_curr_sat(self.dlg.SENSOR.currentText()))
         self.dlg.SENSOR.currentIndexChanged.connect(
             lambda: (QMessageBox.information(
                 None, u'Работа с GF/ZY',
                 u'Программа НЕ работает с RAR-архивами, поэтому:\n1. Извлеки содержимое RAR-архивов с данными GF/ZY:\n'
                 u'(можно извлечь всё в одну папку, можно извлечь каждый архив в отдельный каталог)\n'
                 u'2. Запакуй ВСЕ извлечённые данные в ZIP-архив\n'
-                u'3. Ура') if self.satellite.get_curr_sat() == "GF1-2, ZY3" else ''))
+                u'3. Ура') if self.satellite_handler.get_curr_sat() == "GF1-2, ZY3" else ''))
         self.dlg.INPUTbrowse.clicked.connect(
-            lambda: self.select_input_file(sensor=self.satellite.get_curr_sat()))
+            lambda: self.select_input_file(sensor=self.satellite_handler.get_curr_sat()))
         self.dlg.OUTPUTbrowse.clicked.connect(
             lambda: self.select_output_dir())
         self.dlg.START.clicked.connect(lambda: self.start_processing())
@@ -327,7 +328,7 @@ class Helper:
             raise
 
     def start_processing(self):
-        sensor = self.satellite.get_curr_sat()
+        sensor = self.satellite_handler.get_curr_sat()
         source_file = self.curr_filepath
         dst_path = auxiliary_functions.make_out_dir(self.dlg.OUTPUT.text())
         if sensor == 'BKA':
@@ -344,8 +345,8 @@ class Helper:
     def ellipsoidal_area_settings(self):
         # populate local module GUI
         units = ['sq_km', 'sq_m', 'sq_miles', 'sq_ft', 'sq_nm', 'sq_degrees']
-        layers = [layer.name() for layer in QgsMapLayerRegistry.instance().mapLayers().values()]
-        self.populateComboBox(self.dlg.LAYERcomboBox, layers, layers[0], True)
+        layers = self.layer_handler.get_layer_name_list()
+        self.populateComboBox(self.dlg.LAYERcomboBox, layers, u'Выберите слой', True)
         self.populateComboBox(self.dlg.UNITScomboBox, units, u'Укажите единицы', False)
 
 

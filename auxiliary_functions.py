@@ -70,11 +70,12 @@ class Satellite:
 
 class Layers:
     def __init__(self):
-        self.layer_objs = [layer for layer in QgsMapLayerRegistry.instance().mapLayers()]
-    #     self.layer_names = [layer_obj.values().name() for layer_obj in self.layer_objs]
-    #
-    # # def get_active_lyr(self):
-    # #     # TODO как получить активный слой?
-    #
-    # def set_layer_by_lyr_name(self, name):
-    #     if name in self.layer_names:
+        self.layer_obj_list = None
+        self.update_layer_obj_list()
+
+    def update_layer_obj_list(self):
+        self.layer_obj_list = QgsMapLayerRegistry.instance().mapLayers()
+
+    def get_layer_name_list(self):
+        layer_name_list = [layer.name() for layer in QgsMapLayerRegistry.instance().mapLayers().values()]
+        return layer_name_list
