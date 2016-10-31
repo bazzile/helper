@@ -76,6 +76,8 @@ class Layers:
     def update_layer_obj_list(self):
         self.layer_obj_list = QgsMapLayerRegistry.instance().mapLayers()
 
-    def get_layer_name_list(self):
-        layer_name_list = [layer.name() for layer in QgsMapLayerRegistry.instance().mapLayers().values()]
+    def get_layer_name_list(self, lyr_type='vector'):
+        types = {'vector': 0, 'raster': 1}
+        layer_name_list = [layer.name() for layer in QgsMapLayerRegistry.instance().mapLayers().values() if
+                           layer.type() == types[lyr_type]]
         return layer_name_list
