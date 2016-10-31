@@ -208,7 +208,7 @@ class Helper:
         self.dlg.ellipsoidal_pushButton.clicked.connect(
             lambda:
             ellipsoidal_area(unicode(self.dlg.LAYERcomboBox.currentText()), 'WGS84', 'area_a',
-                             unicode(self.dlg.UNITScomboBox.currentText()), r"D:\out.shp",
+                             unicode(self.dlg.UNITScomboBox.currentText()), r"E:\out.shp",
                              self.dlg.ellipsoidal_progressBar))
 
     def upd_progress(self, value):
