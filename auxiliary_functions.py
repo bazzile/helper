@@ -5,6 +5,8 @@ import os
 import shutil
 import contextlib
 import tempfile
+from StringIO import StringIO
+import xml.etree.ElementTree as ET
 from PyQt4.QtCore import *
 from qgis.core import *
 
@@ -26,6 +28,17 @@ def make_temp_directory():
         yield temp_dir
     finally:
         shutil.rmtree(temp_dir)
+
+
+def remove_xml_namespace(xml_text_content):
+    """Убирает пространсво имён xmlns из xml-файла, чтобы не включать его в названия тего в при поиске.
+    Возвращает очищенное дерево xml
+    :param xml_text_content: текстовое содержимое xml-файла"""
+    tree = ET.iterparse(StringIO(xml_text_content))
+    for _, el in tree:
+        if '}' in el.tag:
+            el.tag = el.tag.split('}', 1)[1]  # strip all namespaces
+    return tree
 
 
 # задание стандартной директории
