@@ -34,7 +34,7 @@ import os.path
 import ql_exporter
 import auxiliary_functions
 
-from my_ellipsoidal_area import ellipsoidal_area
+from temp_my_ellipsoidal_area import ellipsoidal_area
 
 
 class Helper:
@@ -209,7 +209,7 @@ class Helper:
             lambda:
             ellipsoidal_area(unicode(self.dlg.LAYERcomboBox.currentText()), 'WGS84', 'area_a',
                              unicode(self.dlg.UNITScomboBox.currentText()), r"E:\out.shp",
-                             self.dlg.ellipsoidal_progressBar))
+                             self.dlg.ellipsoidal_progressBar, self.dlg.AREAtextBrowser))
 
     def upd_progress(self, value):
         self.dlg.progressBar.setValue(value)
