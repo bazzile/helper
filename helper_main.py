@@ -77,9 +77,7 @@ class Helper:
         self.toolbar.setObjectName(u'Helper')
 
         # мои переменные
-        self.curr_filepath = None
         self.last_used_path = None
-        self.out_dir = None
         self.satellite_handler = auxiliary_functions.Satellite()
         self.layer_handler = auxiliary_functions.Layers()
 
@@ -185,6 +183,7 @@ class Helper:
         """Make the GUI live."""
         self.populateComboBox(self.dlg.SENSOR, self.satellite_handler.get_sat_list(), u'Какой спутник ищем?', True)
         self.dlg.INPUT.setText(u'Где взять исходные файлы?')
+        self.dlg.OUTPUT.setText(u"Укажите выходную директорию")
 
         # ellipsoidal_area
         self.ellipsoidal_area_settings()
@@ -199,7 +198,7 @@ class Helper:
                 u'2. Запакуй ВСЕ извлечённые данные в ZIP-архив\n'
                 u'3. Ура') if self.satellite_handler.get_curr_sat() == "GF1-2, ZY3" else ''))
         self.dlg.INPUTbrowse.clicked.connect(
-            lambda: self.select_input_file(sensor=self.satellite_handler.get_curr_sat()))
+            lambda: self.set_input_file(sensor=self.satellite_handler.get_curr_sat()))
         self.dlg.OUTPUTbrowse.clicked.connect(
             lambda: self.select_output_dir())
         self.dlg.START.clicked.connect(lambda: self.start_processing())
@@ -264,48 +263,47 @@ class Helper:
         combo.blockSignals(False)
 
     #  TODO разобраться с окончаниями elif - в конце можно убрать дубликаты кода
-    def select_input_file(self, sensor):
+    def set_input_file(self, sensor):
         # на вход идёт не файл, а директория, поэтому выводим в отдельный блок
-        if sensor == 'GF1-2, ZY3zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz':
-            self.curr_filepath = QFileDialog.getExistingDirectory(
-                self.dlg, u"Укажите файл контура ", auxiliary_functions.lastUsedDir())
-            if self.curr_filepath != '':
-                self.dlg.INPUT.setText(self.curr_filepath)
-                auxiliary_functions.setLastUsedDir(self.curr_filepath)
-                self.out_dir = self.curr_filepath
-                self.dlg.OUTPUT.setText(self.out_dir)
-            else:
-                self.dlg.INPUT.setText(u'Где взять исходные файлы?')
+        # if sensor == 'GF1-2, ZY3zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz':
+        #     self.curr_filepath = QFileDialog.getExistingDirectory(
+        #         self.dlg, u"Укажите файл контура ", auxiliary_functions.lastUsedDir())
+        #     if self.curr_filepath != '':
+        #         self.dlg.INPUT.setText(self.curr_filepath)
+        #         auxiliary_functions.setLastUsedDir(self.curr_filepath)
+        #         self.out_dir = self.curr_filepath
+        #         self.dlg.OUTPUT.setText(self.out_dir)
+        #     else:
+        #         self.dlg.INPUT.setText(u'Где взять исходные файлы?')
+        # else:
+        if sensor == 'BKA':
+            file_format = u' БКА (*.kml *.kmz *.KML *.KMZ)'
+        elif sensor == 'DEIMOS2':
+            file_format = u' Deimos-2 (*.zip *.ZIP)'
+        elif sensor == 'TH':
+            file_format = u' TH (*.zip *.ZIP)'
+        elif sensor == 'GF1-2, ZY3':
+            file_format = u'GF1-2, ZY3 (*.zip *.ZIP)'
+        elif sensor == 'TRIPLESAT':
+            file_format = u' TRIPLESAT (*.zip *.ZIP)'
         else:
-            if sensor == 'BKA':
-                file_format = u' БКА (*.kml *.kmz *.KML *.KMZ)'
-            elif sensor == 'DEIMOS2':
-                file_format = u' Deimos-2 (*.zip *.ZIP)'
-            elif sensor == 'TH':
-                file_format = u' TH (*.zip *.ZIP)'
-            elif sensor == 'GF1-2, ZY3':
-                file_format = u'GF1-2, ZY3 (*.zip *.ZIP)'
-            elif sensor == 'TRIPLESAT':
-                file_format = u' TRIPLESAT (*.zip *.ZIP)'
-            else:
-                file_format = u'??? (Сенсор не задан)'
-            self.curr_filepath = QFileDialog.getOpenFileName(
-                    self.dlg, u"Укажите файл контура ", auxiliary_functions.lastUsedDir(), file_format)
-            if self.curr_filepath != '':
-                self.dlg.INPUT.setText(self.curr_filepath)
-                auxiliary_functions.setLastUsedDir(os.path.dirname(self.curr_filepath))
-                self.out_dir = os.path.dirname(self.curr_filepath)
-                self.dlg.OUTPUT.setText(self.out_dir)
-            else:
-                self.dlg.INPUT.setText(u'Где взять исходные файлы?')
+            file_format = u'??? (Сенсор не задан)'
+        src_file_path = QFileDialog.getOpenFileName(
+                self.dlg, u"Укажите файл контура ", auxiliary_functions.lastUsedDir(), file_format)
+        if not src_file_path:
+            return None
+        self.dlg.INPUT.setText(src_file_path)
+        auxiliary_functions.setLastUsedDir(os.path.dirname(src_file_path))
+        out_dir = os.path.dirname(src_file_path)
+        self.dlg.OUTPUT.setText(out_dir)
 
-    # TODO сделать select_..._ функцией по типу populate_combo
     def select_output_dir(self):
-        self.out_dir = QFileDialog.getExistingDirectory(
+        out_dir = QFileDialog.getExistingDirectory(
             self.dlg, u"Укажите файл контура ", auxiliary_functions.lastUsedDir(type='out'))
-        if self.out_dir != '':
-            self.dlg.OUTPUT.setText(self.out_dir)
-            auxiliary_functions.setLastUsedDir(self.out_dir, type='out')
+        if not out_dir:
+            return None
+        self.dlg.OUTPUT.setText(out_dir)
+        auxiliary_functions.setLastUsedDir(out_dir, type='out')
 
     def observe_progress(self, callback=None):
         """Функция для отслеживания прогресса обработки в ql_exporter с помощью callbacks"""
@@ -323,7 +321,7 @@ class Helper:
 
     def start_processing(self):
         sensor = self.satellite_handler.get_curr_sat()
-        source_file = self.curr_filepath
+        source_file = self.dlg.INPUT.text()
         dst_path = auxiliary_functions.make_out_dir(self.dlg.OUTPUT.text())
         if sensor == 'BKA':
             self.observe_progress(ql_exporter.bka_ql_exporter(source_file, dst_path))
@@ -338,7 +336,7 @@ class Helper:
 
     def ellipsoidal_area_settings(self):
         # populate local module GUI
-        units = [u'км2', u'м2']  # 'sq_miles', 'sq_ft', 'sq_nm', 'sq_degrees'
+        units = [u'км²', u'м²']  # 'sq_miles', 'sq_ft', 'sq_nm', 'sq_degrees'
         layers = self.layer_handler.get_layer_name_list()
         self.populateComboBox(self.dlg.LAYERcomboBox, layers, '', True)
         self.populateComboBox(self.dlg.UNITScomboBox, units, '', False)
