@@ -100,6 +100,8 @@ def bka_ql_exporter(source_file, dst_dirpath):
         ql_width, ql_height = ql_image_obj.size[0], ql_image_obj.size[1]
         del ql_image_obj
         coords_str = ql_kml_list[q].find(".//coordinates").text
+        # предусматриваем необычный вариант хранения координат (X,Y,Z в одну строчку)
+        coords_str = coords_str.strip().replace(',0 ', '\n')
         # преобразуем строку с координатами углов в список и разбиваем по 4 точкам
         coords_lst = coords_str.split('\n')
         c1, c2, c3, c4 = coords_lst[3], coords_lst[0], coords_lst[1], coords_lst[2]
@@ -227,5 +229,5 @@ def chinease_ql_exporter(source_file, dst_dirpath, sensor):
     process_done_flag = True
     yield percent_done, total_ql_list, process_done_flag
 
-# bka_ql_exporter(r"E:\!test\BKA16C_05\response.kml", r"E:\!test")
+# bka_ql_exporter(r"E:\!test\BKA_16-06-29.kmz", r"E:\!test")
 
