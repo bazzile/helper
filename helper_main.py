@@ -207,7 +207,9 @@ class Helper:
         self.dlg.ellipsoidal_pushButton.clicked.connect(
             lambda:
             ellipsoidal_area(unicode(self.dlg.LAYERcomboBox.currentText()), 'WGS84', 'area_a',
-                             unicode(self.dlg.UNITScomboBox.currentText()), r"E:\out.shp",
+                             u'км²' if self.dlg.radioButton_km_sq.isChecked()
+                             else u'Га' if self.dlg.radioButton_Ha.isChecked() else u'м²',
+                             self.dlg.area_out_file_lineEdit.text(),
                              self.dlg.ellipsoidal_progressBar, self.dlg.AREAtextBrowser))
 
     def upd_progress(self, value):
@@ -292,19 +294,21 @@ class Helper:
                 self.dlg, u"Укажите файл контура ", auxiliary_functions.lastUsedDir(), file_format)
         if not src_file_path:
             return None
-        auxiliary_functions.setLastUsedDir(os.path.dirname(src_file_path))
-        src_file_path = os.path.normpath(src_file_path)
-        self.dlg.INPUT.setText(src_file_path)
-        out_dir = os.path.join(os.path.dirname(src_file_path), 'QuickLooks')
-        self.dlg.OUTPUT.setText(out_dir)
+        else:
+            auxiliary_functions.setLastUsedDir(os.path.dirname(src_file_path))
+            src_file_path = os.path.normpath(src_file_path)
+            self.dlg.INPUT.setText(src_file_path)
+            out_dir = os.path.join(os.path.dirname(src_file_path), 'QuickLooks')
+            self.dlg.OUTPUT.setText(out_dir)
 
     def select_output_dir(self):
         out_dir = QFileDialog.getExistingDirectory(
             self.dlg, u"Укажите файл контура ", auxiliary_functions.lastUsedDir(type='out'))
         if not out_dir:
             return None
-        self.dlg.OUTPUT.setText(str(os.path.join(out_dir, 'QuickLooks')))
-        auxiliary_functions.setLastUsedDir(out_dir, type='out')
+        else:
+            self.dlg.OUTPUT.setText(str(os.path.join(out_dir, 'QuickLooks')))
+            auxiliary_functions.setLastUsedDir(out_dir, type='out')
 
     def observe_progress(self, callback=None):
         """Функция для отслеживания прогресса обработки в ql_exporter с помощью callbacks"""
@@ -337,7 +341,5 @@ class Helper:
 
     def ellipsoidal_area_settings(self):
         # populate local module GUI
-        units = [u'км²', u'м²']  # 'sq_miles', 'sq_ft', 'sq_nm', 'sq_degrees'
         layers = self.layer_handler.get_layer_name_list()
         self.populateComboBox(self.dlg.LAYERcomboBox, layers, '', True)
-        self.populateComboBox(self.dlg.UNITScomboBox, units, '', False)
