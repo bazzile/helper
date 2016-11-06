@@ -292,9 +292,10 @@ class Helper:
                 self.dlg, u"Укажите файл контура ", auxiliary_functions.lastUsedDir(), file_format)
         if not src_file_path:
             return None
-        self.dlg.INPUT.setText(src_file_path)
         auxiliary_functions.setLastUsedDir(os.path.dirname(src_file_path))
-        out_dir = os.path.dirname(src_file_path)
+        src_file_path = os.path.normpath(src_file_path)
+        self.dlg.INPUT.setText(src_file_path)
+        out_dir = os.path.join(os.path.dirname(src_file_path), 'QuickLooks')
         self.dlg.OUTPUT.setText(out_dir)
 
     def select_output_dir(self):
@@ -302,7 +303,7 @@ class Helper:
             self.dlg, u"Укажите файл контура ", auxiliary_functions.lastUsedDir(type='out'))
         if not out_dir:
             return None
-        self.dlg.OUTPUT.setText(out_dir)
+        self.dlg.OUTPUT.setText(str(os.path.join(out_dir, 'QuickLooks')))
         auxiliary_functions.setLastUsedDir(out_dir, type='out')
 
     def observe_progress(self, callback=None):
