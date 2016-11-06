@@ -16,9 +16,6 @@ from qgis.core import *
 
 
 def ellipsoidal_area(input_lyr_name, ellipsoid, new_field, units, output, progress, text_output):
-    # measure_units_dict = {0: 'sq_km', 1: 'sq_m', 2: 'sq_miles', 3: 'sq_ft',
-    #                       4: 'sq_nm', 5: 'sq_degrees'}
-    # units_selection = measure_units_dict[units]
     input_layer = QgsMapLayerRegistry.instance().mapLayersByName(input_lyr_name)[0]
     if not input_layer.crs().geographicFlag():
         raise GeoAlgorithmExecutionException(
@@ -35,8 +32,12 @@ def ellipsoidal_area(input_lyr_name, ellipsoid, new_field, units, output, progre
         fields.append(field)
     fields.append(QgsField(new_field, QVariant.Double))
 
-    # writer = VectorWriter(output, None, fields,
-    #                       QGis.WKBMultiPolygon, input_layer.crs())
+    if not output:
+        # TODO случай просто расчёта без слоя
+        pass
+    else:
+        writer = VectorWriter(output, None, fields,
+                              QGis.WKBMultiPolygon, input_layer.crs())
     # Initialize QgsDistanceArea object
     area = QgsDistanceArea()
     area.setEllipsoid(ellipsoid)
@@ -49,7 +50,7 @@ def ellipsoidal_area(input_lyr_name, ellipsoid, new_field, units, output, progre
     features = processing.features(input_layer)
     num_features = len(features)
 
-    total_area, total_feat_count = 0, 0
+    total_area = 0
     for i, feat in enumerate(features):
         progress.setValue(int(100 * i / num_features))
         geom = feat.geometry()
@@ -63,25 +64,14 @@ def ellipsoidal_area(input_lyr_name, ellipsoid, new_field, units, output, progre
             polygon_area = area.measurePolygon(polygon[0])
 
         # calculated area is in sq. metres (see the "else" case)
-        # TODO убрать лишние единицы
-        if units == u'км2':
+        # TODO добавить гектары вместо метров
+        if units == u'км²':
             final_area = polygon_area / 1e6
-        # elif units == 'sq_ft':
-        #     final_area = area.convertMeasurement(
-        #         polygon_area, QGis.Meters, QGis.Feet, True)[0]
-        # elif units == 'sq_miles':
-        #     final_area = area.convertMeasurement(
-        #         polygon_area, QGis.Meters, QGis.Feet, True)[0] / (5280.0 * 5280.0)
-        # elif units == 'sq_nm':
-        #     final_area = area.convertMeasurement(
-        #         polygon_area, QGis.Meters, QGis.NauticalMiles, True)[0]
-        # elif units == 'sq_degrees':
-        #     final_area = area.convertMeasurement(
-        #         polygon_area, QGis.Meters, QGis.Degrees, True)[0]
+        elif units == u'Га':
+            final_area = polygon_area / 10000
         else:
             final_area = polygon_area
         total_area += final_area
-        total_feat_count += 1
 
         attrs = feat.attributes()
         attrs.append(final_area)
@@ -90,5 +80,6 @@ def ellipsoidal_area(input_lyr_name, ellipsoid, new_field, units, output, progre
         # writer.addFeature(out_f)
 
     progress.setValue(100)
-    text_output.setText(u'Общая площадь файла {}: {} {}'.format(input_lyr_name, total_area, units))
+    text_output.setText(u'Имя файла: {}\nКоличество объектов: {}\nОбщая площадь: {} {}'
+                        .format(input_lyr_name, num_features, total_area, units))
     # del writer
