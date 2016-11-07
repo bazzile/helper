@@ -188,6 +188,7 @@ class Helper:
         # ellipsoidal_area
         self.ellipsoidal_area_settings()
         self.dlg.options_widget.hide()
+        self.dlg.out_file_widget.hide()
 
     def runGui(self):
         self.dlg.SENSOR.currentIndexChanged.connect(lambda: self.satellite_handler.set_curr_sat(self.dlg.SENSOR.currentText()))
@@ -202,7 +203,7 @@ class Helper:
             lambda: self.set_input_file(sensor=self.satellite_handler.get_curr_sat()))
         self.dlg.OUTPUTbrowse.clicked.connect(
             lambda: self.select_output_dir())
-        self.dlg.START.clicked.connect(lambda: self.start_processing())
+        self.dlg.START.clicked.connect(self.start_processing)
 
         # ellipsoidal_area
         self.dlg.ellipsoidal_pushButton.clicked.connect(
@@ -214,6 +215,8 @@ class Helper:
                              self.dlg.ellipsoidal_progressBar, self.dlg.AREAtextBrowser))
 
         self.dlg.Aux_param_checkBox.stateChanged.connect(self.show_options)
+        self.dlg.out_file_checkBox.stateChanged.connect(self.show_out_file)
+        self.dlg.area_out_pushButton.clicked.connect(self.set_output_file)
 
     def upd_progress(self, value):
         self.dlg.progressBar.setValue(value)
@@ -269,18 +272,7 @@ class Helper:
 
     #  TODO разобраться с окончаниями elif - в конце можно убрать дубликаты кода
     def set_input_file(self, sensor):
-        # на вход идёт не файл, а директория, поэтому выводим в отдельный блок
-        # if sensor == 'GF1-2, ZY3zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz':
-        #     self.curr_filepath = QFileDialog.getExistingDirectory(
-        #         self.dlg, u"Укажите файл контура ", auxiliary_functions.lastUsedDir())
-        #     if self.curr_filepath != '':
-        #         self.dlg.INPUT.setText(self.curr_filepath)
-        #         auxiliary_functions.setLastUsedDir(self.curr_filepath)
-        #         self.out_dir = self.curr_filepath
-        #         self.dlg.OUTPUT.setText(self.out_dir)
-        #     else:
-        #         self.dlg.INPUT.setText(u'Где взять исходные файлы?')
-        # else:
+
         if sensor == 'BKA':
             file_format = u' БКА (*.kml *.kmz *.KML *.KMZ)'
         elif sensor == 'DEIMOS2':
@@ -303,6 +295,16 @@ class Helper:
             self.dlg.INPUT.setText(src_file_path)
             out_dir = os.path.join(os.path.dirname(src_file_path), 'QuickLooks')
             self.dlg.OUTPUT.setText(out_dir)
+
+    def set_output_file(self):
+        dst_file_path = QFileDialog.getSaveFileName(
+            self.dlg, u"Где сохранить файл?", auxiliary_functions.lastUsedDir(), u'SHP-файл (*.shp *.SHP)')
+        if not dst_file_path:
+            return None
+        else:
+            auxiliary_functions.setLastUsedDir(os.path.dirname(dst_file_path))
+            dst_file_path = os.path.normpath(dst_file_path)
+            self.dlg.area_out_file_lineEdit.setText(dst_file_path)
 
     def select_output_dir(self):
         out_dir = QFileDialog.getExistingDirectory(
@@ -352,3 +354,9 @@ class Helper:
             self.dlg.options_widget.show()
         else:
             self.dlg.options_widget.hide()
+
+    def show_out_file(self):
+        if self.dlg.out_file_checkBox.isChecked():
+            self.dlg.out_file_widget.show()
+        else:
+            self.dlg.out_file_widget.hide()
