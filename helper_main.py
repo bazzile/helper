@@ -187,6 +187,7 @@ class Helper:
 
         # ellipsoidal_area
         self.ellipsoidal_area_settings()
+        self.dlg.options_widget.hide()
 
     def runGui(self):
         self.dlg.SENSOR.currentIndexChanged.connect(lambda: self.satellite_handler.set_curr_sat(self.dlg.SENSOR.currentText()))
@@ -211,6 +212,8 @@ class Helper:
                              else u'Га' if self.dlg.radioButton_Ha.isChecked() else u'м²',
                              self.dlg.area_out_file_lineEdit.text(),
                              self.dlg.ellipsoidal_progressBar, self.dlg.AREAtextBrowser))
+
+        self.dlg.Aux_param_checkBox.stateChanged.connect(self.show_options)
 
     def upd_progress(self, value):
         self.dlg.progressBar.setValue(value)
@@ -343,3 +346,9 @@ class Helper:
         # populate local module GUI
         layers = self.layer_handler.get_layer_name_list()
         self.populateComboBox(self.dlg.LAYERcomboBox, layers, '', True)
+
+    def show_options(self):
+        if self.dlg.Aux_param_checkBox.isChecked():
+            self.dlg.options_widget.show()
+        else:
+            self.dlg.options_widget.hide()
