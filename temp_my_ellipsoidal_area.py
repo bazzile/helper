@@ -1,13 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-##Ellipsoidal Area=name
-##Utils=group
-##input=vector polygon
-##ellipsoid=string WGS84
-##new_field=string Area
-##units=selection sq_km;sq_m;sq_miles;sq_ft;sq_nm;sq_degrees
-##output=output vector
-
 import processing
 from processing.core.GeoAlgorithmExecutionException import GeoAlgorithmExecutionException
 from processing.tools.vector import VectorWriter
@@ -51,11 +43,11 @@ def ellipsoidal_area(input_lyr_name, ellipsoid, new_field, units, output, progre
     num_features = len(features)
 
     total_area = 0
+    error_features_counter = 0
     for i, feat in enumerate(features):
         progress.setValue(int(100 * i / num_features))
         geom = feat.geometry()
         polygon_area = 0
-        error_features_counter = 0
         try:
             if geom.isMultipart():
                 polygons = geom.asMultiPolygon()
@@ -85,9 +77,10 @@ def ellipsoidal_area(input_lyr_name, ellipsoid, new_field, units, output, progre
             pass
 
     progress.setValue(100)
-    text_output.setText(u'Имя файла: {}\nКоличество объектов: {}\nОбщая площадь: {} {}{}'
-                        .format(input_lyr_name, num_features, total_area, units,
-                                u'\nВнимание! В файле встречаются некорректные / битые объекты в количестве {} шт.\n'
-                                u'Рекомендуется проверить топологию'.format(error_features_counter)
-                                if error_features_counter > 0 else ''))
+    text_output.setText(
+        u'Имя файла: {}\nКоличество объектов: {}\nОбщая площадь: {} {}{}'.format(
+            input_lyr_name, num_features, total_area, units,
+            u'\nВнимание! В исходнойм файле встречаются некорректные / битые объекты в количестве {} шт.\n'
+            u'Рекомендуется проверить топологию'.format(error_features_counter)
+            if error_features_counter > 0 else ''))
     # del writer
