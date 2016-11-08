@@ -188,7 +188,6 @@ class Helper:
         # ellipsoidal_area
         self.ellipsoidal_area_settings()
         self.dlg.options_widget.hide()
-        self.dlg.out_file_widget.hide()
 
     def runGui(self):
         self.dlg.SENSOR.currentIndexChanged.connect(lambda: self.satellite_handler.set_curr_sat(self.dlg.SENSOR.currentText()))
@@ -215,7 +214,6 @@ class Helper:
                              self.dlg.ellipsoidal_progressBar, self.dlg.AREAtextBrowser))
 
         self.dlg.Aux_param_checkBox.stateChanged.connect(self.show_options)
-        self.dlg.out_file_checkBox.stateChanged.connect(self.show_out_file)
         self.dlg.area_out_pushButton.clicked.connect(self.set_output_file)
 
     def upd_progress(self, value):
@@ -354,9 +352,3 @@ class Helper:
             self.dlg.options_widget.show()
         else:
             self.dlg.options_widget.hide()
-
-    def show_out_file(self):
-        if self.dlg.out_file_checkBox.isChecked():
-            self.dlg.out_file_widget.show()
-        else:
-            self.dlg.out_file_widget.hide()
