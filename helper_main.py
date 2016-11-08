@@ -288,7 +288,7 @@ class Helper:
         if not src_file_path:
             return None
         else:
-            auxiliary_functions.setLastUsedDir(os.path.dirname(src_file_path))
+            auxiliary_functions.setLastUsedDir(src_file_path)
             src_file_path = os.path.normpath(src_file_path)
             self.dlg.INPUT.setText(src_file_path)
             out_dir = os.path.join(os.path.dirname(src_file_path), 'QuickLooks')
