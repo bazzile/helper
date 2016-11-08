@@ -50,7 +50,7 @@ def tab_template(sensor, file_name, map_coords1, map_coords2, map_coords3, map_c
 
 
 def get_valid_column_name(col_name_list, layer):
-    img_name = None
+    # img_name = None
     for col_name in col_name_list:
         img_contour = layer.GetFeature(0)
         try:
@@ -59,9 +59,8 @@ def get_valid_column_name(col_name_list, layer):
                 return col_name
         except ValueError:
             continue
-    if img_name is None:
-        # TODO почему ошибка не вылазит?
-        raise ValueError(u'Поля {} не содержат названия снимков. Проверье shp-файл'.format(str(col_name_list)))
+    # если дошли до сюда, то тот SHP-файл не содержит нужных полей
+    return None
 
 
 def bka_ql_exporter(source_file, dst_dirpath):
@@ -193,6 +192,12 @@ def chinease_ql_exporter(source_file, dst_dirpath, sensor):
                             # вариант GF/ZY/TRIPLESAT
                             col_name = get_valid_column_name(['browsefile', 'browserimg'], layer)
                         counter = 0
+                        # если в shp-файле не нашлось нужных полей, откидываем его
+                        if col_name is None:
+                            total_ql_list -= ql_list
+                            yield 100, 0, process_done_flag
+                            del layer, dataSource
+                            continue
                         for img_contour in layer:
                             # ql_name_w_type = img_contour.GetField(col_name)
                             if sensor == 'TH':
@@ -229,5 +234,5 @@ def chinease_ql_exporter(source_file, dst_dirpath, sensor):
     process_done_flag = True
     yield percent_done, total_ql_list, process_done_flag
 
-# bka_ql_exporter(r"E:\!test\BKA_16-06-29.kmz", r"E:\!test")
-
+# chinease_ql_exporter(r"C:\Users\lobanov\.qgis2\python\plugins\Helper\testData\TRIPLESAT\2016-10-26_1808644472_exportshp.zip",
+#                      r"C:\Users\lobanov\.qgis2\python\plugins\Helper\testData\TRIPLESAT\QuickLooks", r"TRIPLESAT")

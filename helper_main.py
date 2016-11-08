@@ -322,6 +322,10 @@ class Helper:
                 if process_done_flag is True:
                     QMessageBox.information(None, 'Result',
                                             u'Готово!\nСоздано квиклуков: ' + str(file_number))
+                    if process_done_flag is True and file_number == 0:
+                        QMessageBox.warning(None, u'Внимание!',
+                                                u'Не извлечено ни одного изображения! Проверьте состав входного файла')
+
 
         except TypeError:
             print('callback function must be a generator function that yields integer values')
