@@ -124,51 +124,79 @@ def deimos_ql_exporter(source_file, dst_dirpath):
                 ql_list = [f for dp, dn, filenames in os.walk(tmpdir) for f in filenames if f.endswith(('.kmz', '.KMZ'))
                            and f[-7:-4] != 'ALL']
             else:
-                ql_list = [filename for dp, dn, filenames in os.walk(tmpdir)
+                ql_list = [os.path.join(dp, filename) for dp, dn, filenames in os.walk(tmpdir)
                            for filename in filenames if filename.lower().endswith('.png')]
-        for dirpath, dirnames, filenames in os.walk(tmpdir):
-            counter = 0
-            for filename in filenames:
-                if filename.endswith(('.kmz', '.KMZ')) and filename[-7:-4] != 'ALL':
-                    in_file = os.path.join(dirpath, filename)
-                    with zipfile.ZipFile(in_file, 'r') as kmz:
-                        with kmz.open('doc.kml', 'r') as kml:
-                            kml_tree = ET.parse(kml)
-                    root = kml_tree.getroot()
-                    ql_kml_list = root.findall(".//{http://earth.google.com/kml/2.1}GroundOverlay")
-                    for q in range(len(ql_kml_list)):
-                        ql_filename = ql_kml_list[q].find(".//{http://earth.google.com/kml/2.1}name").text
-                        standard_ql_name = ql_filename[11:]
-                        ql_dst_path = os.path.join(dst_dirpath, standard_ql_name + '.jpg')
-                        ql_url = ql_kml_list[q].find(".//{http://earth.google.com/kml/2.1}href").text
-                        content = StringIO(urllib.urlopen(ql_url).read())
-                        i = Image.open(content)
-                        i.save(ql_dst_path, format='JPEG', quality=80)
-                        del i
-                        # response = requests.get(ql_url)
-                        # if response.status_code == 200:
-                        #     i = Image.open(StringIO(response.content))
-                        #     i.save(ql_dst_path, format='JPEG', quality=80)
-                        # else:
-                        #     # TODO выводить ошибку "не удалось скачать квиклук с сервера DEIMOS
-                        #     raise IOError
-                        ql_image_obj = Image.open(ql_dst_path)
-                        ql_width, ql_height = ql_image_obj.size[0], ql_image_obj.size[1]
-                        del ql_image_obj
-                        north = ql_kml_list[q].find(".//{http://earth.google.com/kml/2.1}north").text
-                        south = ql_kml_list[q].find(".//{http://earth.google.com/kml/2.1}south").text
-                        east = ql_kml_list[q].find(".//{http://earth.google.com/kml/2.1}east").text
-                        west = ql_kml_list[q].find(".//{http://earth.google.com/kml/2.1}west").text
-                        c1, c2, c3, c4 = ','.join((str(west), str(north))), ','.join((str(east), str(north))), \
-                                         ','.join((str(east), str(south))), ','.join((str(west), str(south)))
-                        text_content = tab_template('deimos', standard_ql_name, c1, c2, c3, c4, ql_height, ql_width)
-                        with open(os.path.join(dst_dirpath, standard_ql_name + '.tab'), 'w') as f:
-                            f.write(text_content.strip())
-                        counter += 1
-                        percent_done = 100 * counter / len(ql_list)
-                        # этот callback позволяет отслеживать прогресс функции в helper_main
-                        yield percent_done, len(ql_list), process_done_flag
-                    total_ql_list += len(ql_list)
+        if source_file.lower().endswith('.kmz'):
+            for dirpath, dirnames, filenames in os.walk(tmpdir):
+                counter = 0
+                for filename in [filename for filename in filenames if filename.lower().endswith('.kml')]:
+                    with open(os.path.join(dirpath, filename)) as kml_file:
+                        kml_xml = kml_file.read()
+                        tree = auxiliary_functions.remove_xml_namespace(kml_xml)
+                        root = tree.root
+                        ql_kml_list = root.findall(".//GroundOverlay")
+                        for q in range(len(ql_kml_list)):
+                            ql_filename = ql_kml_list[q].find(".//name").text
+                            ql_dst_path = os.path.join(dst_dirpath, ql_filename + '.tif')
+                            ql_url = ql_kml_list[q].find(".//href").text
+                            i = Image.open(os.path.join(tmpdir, ql_url))
+                            i.save(ql_dst_path, format='TIFF')
+                            del i
+                            ql_image_obj = Image.open(ql_dst_path)
+                            ql_width, ql_height = ql_image_obj.size[0], ql_image_obj.size[1]
+                            del ql_image_obj
+                            north = ql_kml_list[q].find(".//north").text
+                            south = ql_kml_list[q].find(".//south").text
+                            east = ql_kml_list[q].find(".//east").text
+                            west = ql_kml_list[q].find(".//west").text
+                            c1, c2, c3, c4 = ','.join((str(west), str(north))), ','.join((str(east), str(north))), \
+                                             ','.join((str(east), str(south))), ','.join((str(west), str(south)))
+                            text_content = tab_template('deimos', ql_filename, c1, c2, c3, c4, ql_height, ql_width)
+                            with open(os.path.join(dst_dirpath, ql_filename + '.tab'), 'w') as f:
+                                f.write(text_content.strip())
+                            counter += 1
+                            percent_done = 100 * counter / len(ql_list)
+                            # этот callback позволяет отслеживать прогресс функции в helper_main
+                            yield percent_done, len(ql_list), process_done_flag
+                        total_ql_list += len(ql_kml_list)
+                    break
+        else:
+            for dirpath, dirnames, filenames in os.walk(tmpdir):
+                counter = 0
+                for filename in filenames:
+                    if filename.endswith(('.kmz', '.KMZ')) and filename[-7:-4] != 'ALL':
+                        in_file = os.path.join(dirpath, filename)
+                        with zipfile.ZipFile(in_file, 'r') as kmz:
+                            with kmz.open('doc.kml', 'r') as kml_file:
+                                kml_xml = kml_file.read()
+                                tree = auxiliary_functions.remove_xml_namespace(kml_xml)
+                                root = tree.root
+                        ql_kml_list = root.findall(".//GroundOverlay")
+                        for q in range(len(ql_kml_list)):
+                            ql_filename = ql_kml_list[q].find(".//name").text
+                            ql_dst_path = os.path.join(dst_dirpath, ql_filename + '.tif')
+                            ql_url = ql_kml_list[q].find(".//href").text
+                            content = StringIO(urllib.urlopen(ql_url).read())
+                            i = Image.open(content)
+                            i.save(ql_dst_path, format='TIFF')
+                            del i
+                            ql_image_obj = Image.open(ql_dst_path)
+                            ql_width, ql_height = ql_image_obj.size[0], ql_image_obj.size[1]
+                            del ql_image_obj
+                            north = ql_kml_list[q].find(".//north").text
+                            south = ql_kml_list[q].find(".//south").text
+                            east = ql_kml_list[q].find(".//east").text
+                            west = ql_kml_list[q].find(".//west").text
+                            c1, c2, c3, c4 = ','.join((str(west), str(north))), ','.join((str(east), str(north))), \
+                                             ','.join((str(east), str(south))), ','.join((str(west), str(south)))
+                            text_content = tab_template('deimos', ql_filename, c1, c2, c3, c4, ql_height, ql_width)
+                            with open(os.path.join(dst_dirpath, ql_filename + '.tab'), 'w') as f:
+                                f.write(text_content.strip())
+                            counter += 1
+                            percent_done = 100 * counter / len(ql_list)
+                            # этот callback позволяет отслеживать прогресс функции в helper_main
+                            yield percent_done, len(ql_list), process_done_flag
+                        total_ql_list += len(ql_kml_list)
     process_done_flag = True
     yield percent_done, total_ql_list, process_done_flag
 
@@ -240,5 +268,5 @@ def chinease_ql_exporter(source_file, dst_dirpath, sensor):
 
 # chinease_ql_exporter(r"C:\Users\lobanov\.qgis2\python\plugins\Helper\testData\TRIPLESAT\2016-10-26_1808644472_exportshp.zip",
 #                      r"C:\Users\lobanov\.qgis2\python\plugins\Helper\testData\TRIPLESAT\QuickLooks", r"TRIPLESAT")
-# deimos_ql_exporter(r"\\NAS5\storage\PRJ\2016\HELPER\Geolocation\EXAMPLE\DEIMOS2\version2\Voronezskiy.kmz",
-#                    r"\\NAS5\storage\PRJ\2016\HELPER\Geolocation\EXAMPLE\DEIMOS2\version2")
+deimos_ql_exporter(r"U:\PRJ\2016\HELPER\Geolocation\EXAMPLE\DEIMOS2\version1\2016-09-27_6izMHfLhb5.zip",
+                   r"U:\PRJ\2016\HELPER\Geolocation\EXAMPLE\DEIMOS2\version1\QuickLooks")
