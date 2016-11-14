@@ -120,8 +120,12 @@ def deimos_ql_exporter(source_file, dst_dirpath):
     with auxiliary_functions.make_temp_directory() as tmpdir:
         with zipfile.ZipFile(source_file, 'r') as zfile:
             zfile.extractall(tmpdir)
-            ql_list = [f for dp, dn, filenames in os.walk(tmpdir) for f in filenames if f.endswith(('.kmz', '.KMZ'))
-                       and f[-7:-4] != 'ALL']
+            if source_file.lower().endswith('.zip'):
+                ql_list = [f for dp, dn, filenames in os.walk(tmpdir) for f in filenames if f.endswith(('.kmz', '.KMZ'))
+                           and f[-7:-4] != 'ALL']
+            else:
+                ql_list = [filename for dp, dn, filenames in os.walk(tmpdir)
+                           for filename in filenames if filename.lower().endswith('.png')]
         for dirpath, dirnames, filenames in os.walk(tmpdir):
             counter = 0
             for filename in filenames:
@@ -236,3 +240,5 @@ def chinease_ql_exporter(source_file, dst_dirpath, sensor):
 
 # chinease_ql_exporter(r"C:\Users\lobanov\.qgis2\python\plugins\Helper\testData\TRIPLESAT\2016-10-26_1808644472_exportshp.zip",
 #                      r"C:\Users\lobanov\.qgis2\python\plugins\Helper\testData\TRIPLESAT\QuickLooks", r"TRIPLESAT")
+# deimos_ql_exporter(r"\\NAS5\storage\PRJ\2016\HELPER\Geolocation\EXAMPLE\DEIMOS2\version2\Voronezskiy.kmz",
+#                    r"\\NAS5\storage\PRJ\2016\HELPER\Geolocation\EXAMPLE\DEIMOS2\version2")

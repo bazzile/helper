@@ -274,7 +274,7 @@ class Helper:
         if sensor == 'BKA':
             file_format = u' БКА (*.kml *.kmz *.KML *.KMZ)'
         elif sensor == 'DEIMOS2':
-            file_format = u' Deimos-2 (*.zip *.ZIP)'
+            file_format = u' Deimos-2 (*.zip *.ZIP *.kmz *.KMZ)'
         elif sensor == 'TH':
             file_format = u' TH (*.zip *.ZIP)'
         elif sensor == 'GF1-2, ZY3':
