@@ -134,6 +134,7 @@ def deimos_ql_exporter(source_file, dst_dirpath):
                         kml_xml = kml_file.read()
                         tree = auxiliary_functions.remove_xml_namespace(kml_xml)
                         root = tree.root
+                        # TODO отсюда и далее до break код полностью дублируется в else. Устранить (функция?)
                         ql_kml_list = root.findall(".//GroundOverlay")
                         for q in range(len(ql_kml_list)):
                             ql_filename = ql_kml_list[q].find(".//name").text
